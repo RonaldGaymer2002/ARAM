@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "build:vercel": "turbo run build --filter=web... && node scripts/prepare-vercel.mjs",
+    "build:vercel:fundares": "turbo run build --filter=fundares... && node scripts/prepare-vercel.mjs fundares",
     "dev": "turbo run dev",
     "dev:identification": "npm --prefix apps/identification run dev",
     "dev:web": "npm --prefix apps/web run dev",
