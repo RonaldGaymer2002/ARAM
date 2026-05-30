@@ -46,9 +46,10 @@ v1.get('/health', (c) => {
 
 // ── Feature modules ──────────────────────────────────────────────────────────
 
-v1.route('/identification', identificationRoute);
-// POST /api/v1/identification/presign  ← get signed S3 upload URL
-// POST /api/v1/identification/verify   ← run document analysis via Claude Sonnet
+v1.route('/extract', identificationRoute);
+// POST /api/v1/extract/text    ← extract from a text message
+// POST /api/v1/extract/presign ← get a presigned S3 upload URL
+// POST /api/v1/extract/media   ← extract from an uploaded image or video
 
 
 app.route('/api/v1', v1);

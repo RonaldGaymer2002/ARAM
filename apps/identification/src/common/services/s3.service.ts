@@ -15,6 +15,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -77,6 +78,20 @@ export class S3Service extends BaseService {
     const base64 = Buffer.concat(chunks).toString('base64');
     this.logger.debug('Object fetched from S3', { key, mimeType, bytes: base64.length });
     return { base64, mimeType };
+  }
+
+  /**
+   * Fetch the Content-Type of an object without downloading its body.
+   * Useful for large media files where downloading bytes is unnecessary.
+   */
+  async headObject(key: string): Promise<{ mimeType: string }> {
+    const res = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+    return { mimeType: res.ContentType ?? 'application/octet-stream' };
+  }
+
+  /** Return the S3 URI for an object (e.g. "s3://bucket/key"). */
+  getObjectUri(key: string): string {
+    return `s3://${this.bucket}/${key}`;
   }
 
   /**

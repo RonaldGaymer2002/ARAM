@@ -1,5 +1,5 @@
 /**
- * Identification controller — HTTP boundary for the identification module.
+ * Extraction controller — HTTP boundary for the extraction module.
  *
  * Responsibilities:
  *   - Validate request shape
@@ -19,12 +19,32 @@ import {
   handleException,
 } from '../../common/exceptions';
 import type { IApiResponse } from '../../common/interfaces';
-import type { PresignResponseDto, VerificationResponseDto } from './identification.dto';
+import type {
+  ExtractionResultDto,
+  PresignResponseDto,
+} from './identification.dto';
 import type { IdentificationService } from './identification.service';
 import { ALLOWED_MIME_TYPES } from './identification.types';
 
 export class IdentificationController {
   constructor(private readonly service: IdentificationService) {}
+
+  // ── POST /text ────────────────────────────────────────────────────────────
+  async extractText(c: Context): Promise<Response> {
+    try {
+      const body = await c.req.json<{ message?: string }>();
+
+      if (!body.message || typeof body.message !== 'string' || !body.message.trim()) {
+        throw new BadRequestException('"message" is required.', 'MISSING_MESSAGE');
+      }
+
+      const result = await this.service.extractText(body.message.trim());
+      const status = result.extracted ? 200 : 422;
+      return c.json<IApiResponse<ExtractionResultDto>>({ data: result }, status);
+    } catch (err) {
+      return handleException(err, c);
+    }
+  }
 
   // ── POST /presign ─────────────────────────────────────────────────────────
   async presign(c: Context): Promise<Response> {
@@ -49,20 +69,29 @@ export class IdentificationController {
     }
   }
 
-  // ── POST /verify ──────────────────────────────────────────────────────────
-  async verify(c: Context): Promise<Response> {
+  // ── POST /media ───────────────────────────────────────────────────────────
+  async extractMedia(c: Context): Promise<Response> {
     try {
-      const body = await c.req.json<{ sessionId?: string }>();
+      const body = await c.req.json<{ sessionId?: string; type?: string }>();
 
       if (!body.sessionId || typeof body.sessionId !== 'string' || !body.sessionId.trim()) {
         throw new BadRequestException('"sessionId" is required.', 'MISSING_SESSION_ID');
       }
 
-      const result = await this.service.verify(body.sessionId.trim());
+      if (!body.type || !['image', 'video'].includes(body.type)) {
+        throw new BadRequestException(
+          '"type" must be "image" or "video".',
+          'INVALID_TYPE',
+        );
+      }
 
-      // 200 = approved, 422 = rejected — both are valid, structured outcomes.
-      const status = result.approved ? 200 : 422;
-      return c.json<IApiResponse<VerificationResponseDto>>({ data: result }, status);
+      const result = await this.service.extractMedia(
+        body.sessionId.trim(),
+        body.type as 'image' | 'video',
+      );
+
+      const status = result.extracted ? 200 : 422;
+      return c.json<IApiResponse<ExtractionResultDto>>({ data: result }, status);
     } catch (err) {
       return handleException(err, c);
     }

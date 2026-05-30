@@ -100,7 +100,9 @@ export class FundaresStack extends cdk.Stack {
     appSecret.grantRead(lambdaRole);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // S3 bucket  —  temporary ID document storage for age verification
+    // S3 bucket  —  temporary media storage for extraction sessions
+    // Images and videos are deleted by a lifecycle rule within 2 days.
+    // The service also deletes the object immediately after extraction.
     // ─────────────────────────────────────────────────────────────────────────
     const verificationBucket = new s3.Bucket(this, "VerificationBucket", {
       bucketName: `${serviceName}-verification`,
@@ -121,19 +123,32 @@ export class FundaresStack extends cdk.Stack {
     verificationBucket.grantReadWrite(lambdaRole);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Bedrock  —  allow Lambda to invoke Claude / Nova for document analysis
+    // Bedrock  —  allow Lambda to invoke Claude / Nova for extraction
+    //
+    // Nova 2 Lite is the default model (BEDROCK_MODEL_ID below).
+    // It is the only Nova model that supports video via S3 URI content blocks.
+    // Claude models are included as fallback overrides.
     // ─────────────────────────────────────────────────────────────────────────
     lambdaRole.addToPolicy(
       new iam.PolicyStatement({
         sid: "AllowBedrockInvokeModel",
         actions: ["bedrock:InvokeModel"],
         resources: [
-          `arn:aws:bedrock:*:${this.account}:inference-profile/us.anthropic.claude-haiku-4*`,
-          `arn:aws:bedrock:*:${this.account}:inference-profile/us.anthropic.claude-sonnet-4*`,
-          `arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4*`,
-          `arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4*`,
+          // Nova 2 Lite — cross-region inference profile (video support)
+          `arn:aws:bedrock:*:${this.account}:inference-profile/us.amazon.nova-2-lite-v1:0`,
+          `arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite-v1:0`,
+          // Nova Lite v1 — fallback (images only)
+          `arn:aws:bedrock:*:${this.account}:inference-profile/us.amazon.nova-lite-v1:0`,
           `arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0`,
+          // Nova Pro — fallback (higher accuracy)
+          `arn:aws:bedrock:*:${this.account}:inference-profile/us.amazon.nova-pro-v1:0`,
           `arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0`,
+          // Claude Haiku 4.5 — text-only fallback
+          `arn:aws:bedrock:*:${this.account}:inference-profile/us.anthropic.claude-haiku-4*`,
+          `arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4*`,
+          // Claude Sonnet 4.x — text-only fallback
+          `arn:aws:bedrock:*:${this.account}:inference-profile/us.anthropic.claude-sonnet-4*`,
+          `arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4*`,
         ],
       }),
     );
@@ -155,20 +170,22 @@ export class FundaresStack extends cdk.Stack {
     // ─────────────────────────────────────────────────────────────────────────
     this.lambdaFn = new lambdaNodejs.NodejsFunction(this, "AppFunction", {
       functionName: `${serviceName}-function`,
-      description: "Fundares identification service",
+      description: "Fundares extraction service — text, image, and video recycling data extraction",
       runtime: lambda.Runtime.NODEJS_22_X,
       entry: path.join(__dirname, "../../apps/identification/src/index.ts"),
       handler: "handler",
       role: lambdaRole,
-      timeout: cdk.Duration.seconds(10),
+      // Video extraction via Nova 2 Lite can take up to 60 s for a 2-minute clip.
+      timeout: cdk.Duration.seconds(60),
       memorySize: 512,
       environment: {
         NODE_ENV: isProd ? "production" : "development",
         CORS_ORIGINS: appSecret.secretValueFromJson("CORS_ORIGINS").unsafeUnwrap(),
         LOG_LEVEL:    appSecret.secretValueFromJson("LOG_LEVEL").unsafeUnwrap(),
         S3_VERIFICATION_BUCKET: verificationBucket.bucketName,
-        BEDROCK_MODEL_ID: "amazon.nova-lite-v1:0",
-        CONFIDENCE_THRESHOLD: "0.85",
+        // Nova 2 Lite: cheapest model with video-via-S3-URI support.
+        // Override per-deploy with lambdaEnvironmentVariables if needed.
+        BEDROCK_MODEL_ID: "us.amazon.nova-2-lite-v1:0",
         ...props.lambdaEnvironmentVariables,
       },
       logGroup: lambdaLogGroup,
