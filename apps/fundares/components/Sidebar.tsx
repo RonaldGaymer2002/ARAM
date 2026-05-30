@@ -14,8 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import toast from 'react-hot-toast';
+import { signOut } from 'next-auth/react';
 
 interface NavItem {
   label: string;
@@ -48,10 +47,9 @@ export function Sidebar({ rol, nombre }: SidebarProps) {
   const navItems = rol === 'admin' ? adminNav : empresaNav;
 
   const handleLogout = async () => {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    toast.success('Sesión cerrada');
+    await signOut({ redirect: false });
     router.push('/login');
+    router.refresh();
   };
 
   const SidebarContent = () => (

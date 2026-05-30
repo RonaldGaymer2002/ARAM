@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { desc, eq } from 'drizzle-orm';
+import {
+  db,
+  empresas,
+  extracciones,
+  mensajesRecolector,
+  recolecciones,
+} from '@fundares/db';
+import { requireAdmin } from '@/lib/session';
 import { z } from 'zod';
 
 const ValidarSchema = z.object({
@@ -13,54 +21,50 @@ const ValidarSchema = z.object({
       fecha_recoleccion: z.string().optional(),
     })
     .optional(),
-  validado_por: z.string().uuid(),
+  validado_por: z.string().uuid().optional(),
 });
 
-/**
- * POST /api/validar
- * Admin approves, rejects or corrects an AI extraction
- */
 export async function POST(request: NextRequest) {
+  const { session, error } = await requireAdmin();
+  if (error || !session) return error;
+
   try {
     const body = await request.json();
-    const { extraccion_id, accion, correcciones, validado_por } = ValidarSchema.parse(body);
+    const { extraccion_id, accion, correcciones } = ValidarSchema.parse(body);
+    const validadoPor = session.user.id;
+    const database = db();
 
-    const supabase = createSupabaseAdmin();
+    const [extraccion] = await database
+      .select()
+      .from(extracciones)
+      .where(eq(extracciones.id, extraccion_id))
+      .limit(1);
 
-    // Fetch the extraction
-    const { data: extraccion, error: fetchError } = await supabase
-      .from('extracciones')
-      .select('*')
-      .eq('id', extraccion_id)
-      .single();
-
-    if (fetchError || !extraccion) {
+    if (!extraccion) {
       return NextResponse.json({ error: 'Extracción no encontrada' }, { status: 404 });
     }
 
     if (accion === 'rechazar') {
-      await supabase
-        .from('extracciones')
-        .update({ estado: 'rechazado', corregido_por: validado_por })
-        .eq('id', extraccion_id);
+      await database
+        .update(extracciones)
+        .set({ estado: 'rechazado', corregidoPor: validadoPor })
+        .where(eq(extracciones.id, extraccion_id));
 
-      // Update parent message
-      if (extraccion.mensaje_id) {
-        await supabase
-          .from('mensajes_recolector')
-          .update({ estado: 'rechazado' })
-          .eq('id', extraccion.mensaje_id);
+      if (extraccion.mensajeId) {
+        await database
+          .update(mensajesRecolector)
+          .set({ estado: 'rechazado' })
+          .where(eq(mensajesRecolector.id, extraccion.mensajeId));
       }
 
       return NextResponse.json({ ok: true, accion: 'rechazado' });
     }
 
-    // Merge corrections
     const datosFinales = {
-      empresa_id: correcciones?.empresa_id ?? extraccion.empresa_id,
-      tipo_material: correcciones?.tipo_material ?? extraccion.tipo_material,
-      cantidad_kg: correcciones?.cantidad_kg ?? extraccion.cantidad_kg,
-      fecha_recoleccion: correcciones?.fecha_recoleccion ?? extraccion.fecha_recoleccion,
+      empresa_id: correcciones?.empresa_id ?? extraccion.empresaId,
+      tipo_material: correcciones?.tipo_material ?? extraccion.tipoMaterial,
+      cantidad_kg: correcciones?.cantidad_kg ?? Number(extraccion.cantidadKg),
+      fecha_recoleccion: correcciones?.fecha_recoleccion ?? extraccion.fechaRecoleccion,
     };
 
     if (!datosFinales.empresa_id) {
@@ -70,46 +74,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create validated recoleccion
-    const { data: recoleccion, error: recoleccionError } = await supabase
-      .from('recolecciones')
-      .insert({
-        extraccion_id,
-        empresa_id: datosFinales.empresa_id,
-        tipo_material: datosFinales.tipo_material,
-        cantidad_kg: datosFinales.cantidad_kg,
-        fecha_recoleccion: datosFinales.fecha_recoleccion,
-        validado_por,
+    const [recoleccion] = await database
+      .insert(recolecciones)
+      .values({
+        extraccionId: extraccion_id,
+        empresaId: datosFinales.empresa_id,
+        tipoMaterial: datosFinales.tipo_material,
+        cantidadKg: String(datosFinales.cantidad_kg),
+        fechaRecoleccion: datosFinales.fecha_recoleccion,
+        validadoPor,
       })
-      .select()
-      .single();
+      .returning();
 
-    if (recoleccionError) {
-      return NextResponse.json({ error: recoleccionError.message }, { status: 500 });
-    }
-
-    // Update extraction state
-    await supabase
-      .from('extracciones')
-      .update({
+    await database
+      .update(extracciones)
+      .set({
         estado: accion === 'corregir' ? 'corregido' : 'aprobado',
-        empresa_id: datosFinales.empresa_id,
-        tipo_material: datosFinales.tipo_material,
-        cantidad_kg: datosFinales.cantidad_kg,
-        fecha_recoleccion: datosFinales.fecha_recoleccion,
-        corregido_por: validado_por,
+        empresaId: datosFinales.empresa_id,
+        tipoMaterial: datosFinales.tipo_material,
+        cantidadKg: String(datosFinales.cantidad_kg),
+        fechaRecoleccion: datosFinales.fecha_recoleccion,
+        corregidoPor: validadoPor,
       })
-      .eq('id', extraccion_id);
+      .where(eq(extracciones.id, extraccion_id));
 
-    // Update parent message
-    if (extraccion.mensaje_id) {
-      await supabase
-        .from('mensajes_recolector')
-        .update({ estado: 'validado' })
-        .eq('id', extraccion.mensaje_id);
+    if (extraccion.mensajeId) {
+      await database
+        .update(mensajesRecolector)
+        .set({ estado: 'validado' })
+        .where(eq(mensajesRecolector.id, extraccion.mensajeId));
     }
 
-    return NextResponse.json({ ok: true, recoleccion });
+    return NextResponse.json({
+      ok: true,
+      recoleccion: recoleccion
+        ? {
+            id: recoleccion.id,
+            extraccion_id: recoleccion.extraccionId,
+            empresa_id: recoleccion.empresaId,
+            tipo_material: recoleccion.tipoMaterial,
+            cantidad_kg: Number(recoleccion.cantidadKg),
+            fecha_recoleccion: recoleccion.fechaRecoleccion,
+            validado_por: recoleccion.validadoPor,
+            validado_at: recoleccion.validadoAt?.toISOString() ?? null,
+          }
+        : null,
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors }, { status: 400 });
@@ -119,11 +129,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET /api/validar?estado=pendiente
- * List extractions pending validation
- */
 export async function GET(request: NextRequest) {
+  const { error } = await requireAdmin();
+  if (error) return error;
+
   const { searchParams } = new URL(request.url);
   const rawEstado = searchParams.get('estado') ?? 'pendiente';
   const estadosValidos = ['pendiente', 'aprobado', 'rechazado', 'corregido'] as const;
@@ -131,21 +140,49 @@ export async function GET(request: NextRequest) {
     ? (rawEstado as (typeof estadosValidos)[number])
     : 'pendiente';
 
-  const supabase = createSupabaseAdmin();
+  const rows = await db()
+    .select({
+      id: extracciones.id,
+      mensaje_id: extracciones.mensajeId,
+      empresa_id: extracciones.empresaId,
+      tipo_material: extracciones.tipoMaterial,
+      cantidad_kg: extracciones.cantidadKg,
+      fecha_recoleccion: extracciones.fechaRecoleccion,
+      confianza_ia: extracciones.confianzaIa,
+      datos_raw: extracciones.datosRaw,
+      estado: extracciones.estado,
+      corregido_por: extracciones.corregidoPor,
+      created_at: extracciones.createdAt,
+      empresa_nombre: empresas.nombre,
+      contenido_texto: mensajesRecolector.contenidoTexto,
+      fotos_urls: mensajesRecolector.fotosUrls,
+      recibido_at: mensajesRecolector.recibidoAt,
+    })
+    .from(extracciones)
+    .leftJoin(empresas, eq(extracciones.empresaId, empresas.id))
+    .leftJoin(mensajesRecolector, eq(extracciones.mensajeId, mensajesRecolector.id))
+    .where(eq(extracciones.estado, estado))
+    .orderBy(desc(extracciones.createdAt));
 
-  const { data, error } = await supabase
-    .from('extracciones')
-    .select(`
-      *,
-      mensajes_recolector (contenido_texto, fotos_urls, recibido_at),
-      empresas (nombre)
-    `)
-    .eq('estado', estado)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ data });
+  return NextResponse.json({
+    data: rows.map((row) => ({
+      id: row.id,
+      mensaje_id: row.mensaje_id,
+      empresa_id: row.empresa_id,
+      tipo_material: row.tipo_material,
+      cantidad_kg: Number(row.cantidad_kg),
+      fecha_recoleccion: row.fecha_recoleccion,
+      confianza_ia: row.confianza_ia ? Number(row.confianza_ia) : null,
+      datos_raw: row.datos_raw,
+      estado: row.estado,
+      corregido_por: row.corregido_por,
+      created_at: row.created_at?.toISOString() ?? null,
+      empresas: row.empresa_nombre ? { nombre: row.empresa_nombre } : null,
+      mensajes_recolector: {
+        contenido_texto: row.contenido_texto,
+        fotos_urls: row.fotos_urls,
+        recibido_at: row.recibido_at?.toISOString() ?? null,
+      },
+    })),
+  });
 }

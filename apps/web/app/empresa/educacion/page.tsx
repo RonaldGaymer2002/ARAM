@@ -1,4 +1,5 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { and, arrayContains, desc, eq } from 'drizzle-orm';
+import { db, contenidoEducativo } from '@fundares/db';
 import { Card, CardBody } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ReactMarkdown from 'react-markdown';
@@ -7,56 +8,74 @@ import { BookOpen, Video, Image } from 'lucide-react';
 
 const iconoTipo = { articulo: BookOpen, video: Video, infografia: Image } as const;
 const colorTipo: Record<string, 'green' | 'blue' | 'yellow'> = {
-  articulo: 'green', video: 'blue', infografia: 'yellow',
+  articulo: 'green',
+  video: 'blue',
+  infografia: 'yellow',
 };
+
+function mapContenido(row: typeof contenidoEducativo.$inferSelect): ContenidoEducativo {
+  return {
+    id: row.id,
+    titulo: row.titulo,
+    tipo: (row.tipo as ContenidoEducativo['tipo']) ?? 'articulo',
+    url: row.url,
+    contenido_md: row.contenidoMd,
+    tags: row.tags,
+    publicado: row.publicado ?? false,
+    created_at: row.createdAt?.toISOString() ?? new Date().toISOString(),
+  };
+}
 
 export default async function EducacionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tag?: string }>;
+  searchParams: { tag?: string };
 }) {
-  const { tag } = await searchParams;
-  const supabase = await createServerSupabaseClient();
+  const { tag } = searchParams;
+  const database = db();
 
-  let query = supabase
-    .from('contenido_educativo')
-    .select('*')
-    .eq('publicado', true)
-    .order('created_at', { ascending: false });
+  const rows = await database
+    .select()
+    .from(contenidoEducativo)
+    .where(
+      tag
+        ? and(eq(contenidoEducativo.publicado, true), arrayContains(contenidoEducativo.tags, [tag]))
+        : eq(contenidoEducativo.publicado, true)
+    )
+    .orderBy(desc(contenidoEducativo.createdAt));
 
-  if (tag) query = query.contains('tags', [tag]);
-
-  const { data: contenido } = await query;
-  const items = (contenido as ContenidoEducativo[]) ?? [];
-
-  // Collect all tags
-  const allTags = [...new Set(items.flatMap(c => c.tags ?? []))].sort();
+  const items = rows.map(mapContenido);
+  const allTags = [...new Set(items.flatMap((item) => item.tags ?? []))].sort();
 
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Educación ambiental</h1>
 
-      {/* Tag filters */}
       {allTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <a href="/empresa/educacion" className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!tag ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          <a
+            href="/empresa/educacion"
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!tag ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          >
             Todos
           </a>
-          {allTags.map(t => (
-            <a key={t} href={`/empresa/educacion?tag=${t}`}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${tag === t ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          {allTags.map((t) => (
+            <a
+              key={t}
+              href={`/empresa/educacion?tag=${t}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${tag === t ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
               {t}
             </a>
           ))}
         </div>
       )}
 
-      {/* Content grid */}
       {items.length === 0 ? (
         <p className="text-center text-gray-400 py-20">Sin contenido publicado aún</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {items.map(item => {
+          {items.map((item) => {
             const Icon = iconoTipo[item.tipo ?? 'articulo'];
             return (
               <Card key={item.id} className="flex flex-col hover:shadow-md transition-shadow">
@@ -74,7 +93,8 @@ export default async function EducacionPage({
                     <div className="aspect-video rounded-lg overflow-hidden bg-black">
                       <iframe
                         src={item.url.replace('watch?v=', 'embed/')}
-                        className="w-full h-full" allowFullScreen
+                        className="w-full h-full"
+                        allowFullScreen
                       />
                     </div>
                   ) : item.contenido_md ? (
@@ -85,8 +105,10 @@ export default async function EducacionPage({
 
                   {item.tags && item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-1">
-                      {item.tags.map(t => (
-                        <span key={t} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{t}</span>
+                      {item.tags.map((t) => (
+                        <span key={t} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                          {t}
+                        </span>
                       ))}
                     </div>
                   )}

@@ -1,64 +1,42 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({ request });
+export default withAuth(
+  function middleware(req) {
+    const token = req.nextauth.token;
+    const path = req.nextUrl.pathname;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll:    () => request.cookies.getAll(),
-        setAll: (
-          pairs: { name: string; value: string; options: CookieOptions }[]
-        ) =>
-          pairs.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          ),
+    if (path.startsWith('/admin') && token?.rol !== 'admin') {
+      return NextResponse.redirect(new URL('/empresa/dashboard', req.url));
+    }
+
+    if (path.startsWith('/empresa') && token?.rol !== 'empresa') {
+      return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+    }
+
+    if (path === '/') {
+      const dest = token?.rol === 'admin' ? '/admin/dashboard' : '/empresa/dashboard';
+      return NextResponse.redirect(new URL(dest, req.url));
+    }
+
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        const path = req.nextUrl.pathname;
+        if (
+          path.startsWith('/api/webhook') ||
+          path.startsWith('/api/auth') ||
+          path === '/login'
+        ) {
+          return true;
+        }
+        return !!token;
       },
     },
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
-  const path = request.nextUrl.pathname;
-
-  // Public paths
-  if (path.startsWith('/api/webhook') || path === '/login') {
-    return response;
   }
-
-  // Not authenticated → login
-  if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // Get role
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('rol')
-    .eq('id', user.id)
-    .single();
-
-  const rol = perfil?.rol as 'admin' | 'empresa' | undefined;
-
-  // Wrong role → redirect to own dashboard
-  if (path.startsWith('/admin') && rol !== 'admin') {
-    return NextResponse.redirect(new URL('/empresa/dashboard', request.url));
-  }
-
-  if (path.startsWith('/empresa') && rol !== 'empresa') {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-  }
-
-  // Root → redirect to dashboard
-  if (path === '/') {
-    const dest = rol === 'admin' ? '/admin/dashboard' : '/empresa/dashboard';
-    return NextResponse.redirect(new URL(dest, request.url));
-  }
-
-  return response;
-}
+);
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],

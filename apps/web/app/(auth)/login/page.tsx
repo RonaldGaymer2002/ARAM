@@ -1,35 +1,38 @@
 'use client';
 
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { createClient } from '@/lib/supabase/client';
 import { Recycle } from 'lucide-react';
 
 export default function LoginPage() {
-  const router   = useRouter();
-
-  const [email,    setEmail]    = useState('');
+  const router = useRouter();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
 
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
 
-    if (error || !data.user) {
+    if (result?.error || !result?.ok) {
       toast.error('Credenciales incorrectas');
       setLoading(false);
       return;
     }
 
-    const { data: perfil } = await supabase
-      .from('perfiles').select('rol').eq('id', data.user.id).single();
+    const sessionRes = await fetch('/api/auth/session');
+    const session = await sessionRes.json();
+    const rol = session?.user?.rol;
 
-    router.push(perfil?.rol === 'admin' ? '/admin/dashboard' : '/empresa/dashboard');
+    router.push(rol === 'admin' ? '/admin/dashboard' : '/empresa/dashboard');
     router.refresh();
   }
 
@@ -53,9 +56,9 @@ export default function LoginPage() {
               type="email"
               required
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700"
-              placeholder="tu@empresa.com"
+              placeholder="admin@fundares.org"
             />
           </div>
 
@@ -67,7 +70,7 @@ export default function LoginPage() {
               type="password"
               required
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700"
               placeholder="••••••••"
             />

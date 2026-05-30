@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import { asc, eq } from 'drizzle-orm';
+import { db, empresas } from '@fundares/db';
+import { requireAdmin } from '@/lib/session';
 import { z } from 'zod';
 
 const EmpresaSchema = z.object({
@@ -8,37 +10,41 @@ const EmpresaSchema = z.object({
   contacto_email: z.string().email().optional(),
 });
 
-/**
- * GET /api/empresas — List all companies
- */
-export async function GET() {
-  const supabase = createSupabaseAdmin();
-  const { data, error } = await supabase
-    .from('empresas')
-    .select('*')
-    .order('nombre');
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ data });
+function mapEmpresa(row: typeof empresas.$inferSelect) {
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    logo_url: row.logoUrl,
+    contacto_email: row.contactoEmail,
+    created_at: row.createdAt?.toISOString() ?? null,
+  };
 }
 
-/**
- * POST /api/empresas — Create company
- */
+export async function GET() {
+  const { error } = await requireAdmin();
+  if (error) return error;
+
+  const rows = await db().select().from(empresas).orderBy(asc(empresas.nombre));
+  return NextResponse.json({ data: rows.map(mapEmpresa) });
+}
+
 export async function POST(request: NextRequest) {
+  const { error } = await requireAdmin();
+  if (error) return error;
+
   try {
     const body = await request.json();
     const parsed = EmpresaSchema.parse(body);
+    const [row] = await db()
+      .insert(empresas)
+      .values({
+        nombre: parsed.nombre,
+        logoUrl: parsed.logo_url ?? null,
+        contactoEmail: parsed.contacto_email ?? null,
+      })
+      .returning();
 
-    const supabase = createSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('empresas')
-      .insert(parsed)
-      .select()
-      .single();
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ data }, { status: 201 });
+    return NextResponse.json({ data: mapEmpresa(row) }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors }, { status: 400 });
@@ -47,28 +53,27 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * PATCH /api/empresas?id=xxx — Update company
- */
 export async function PATCH(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
+  const { error } = await requireAdmin();
+  if (error) return error;
+
+  const id = new URL(request.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 });
 
   try {
     const body = await request.json();
     const parsed = EmpresaSchema.partial().parse(body);
+    const [row] = await db()
+      .update(empresas)
+      .set({
+        nombre: parsed.nombre,
+        logoUrl: parsed.logo_url,
+        contactoEmail: parsed.contacto_email,
+      })
+      .where(eq(empresas.id, id))
+      .returning();
 
-    const supabase = createSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('empresas')
-      .update(parsed)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: mapEmpresa(row) });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors }, { status: 400 });
@@ -77,17 +82,13 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-/**
- * DELETE /api/empresas?id=xxx — Delete company
- */
 export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
+  const { error } = await requireAdmin();
+  if (error) return error;
+
+  const id = new URL(request.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 });
 
-  const supabase = createSupabaseAdmin();
-  const { error } = await supabase.from('empresas').delete().eq('id', id);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await db().delete(empresas).where(eq(empresas.id, id));
   return NextResponse.json({ ok: true });
 }

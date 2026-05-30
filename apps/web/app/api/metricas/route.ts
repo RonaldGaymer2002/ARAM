@@ -1,50 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { and, eq, gte, lte } from 'drizzle-orm';
+import { db, empresas, recolecciones } from '@fundares/db';
 import { calcularMetricas } from '@/lib/metricas';
+import { requireSession } from '@/lib/session';
 
 export async function GET(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { session, error } = await requireSession();
+  if (error || !session) return error;
 
-  const { data: perfil } = await supabase
-    .from('perfiles').select('rol, empresa_id').eq('id', user.id).single();
+  const empresaIdParam = req.nextUrl.searchParams.get('empresa_id');
+  const empresaId = empresaIdParam ?? session.user.empresaId;
 
-  const empresa_id = req.nextUrl.searchParams.get('empresa_id') ?? perfil?.empresa_id;
+  let query = db()
+    .select({
+      tipo_material: recolecciones.tipoMaterial,
+      cantidad_kg: recolecciones.cantidadKg,
+      fecha_recoleccion: recolecciones.fechaRecoleccion,
+    })
+    .from(recolecciones);
 
-  let query = supabase
-    .from('recolecciones')
-    .select('tipo_material, cantidad_kg, fecha_recoleccion');
-
-  if (perfil?.rol === 'empresa') {
-    query = query.eq('empresa_id', perfil.empresa_id!);
-  } else if (empresa_id) {
-    query = query.eq('empresa_id', empresa_id);
+  if (session.user.rol === 'empresa') {
+    if (!session.user.empresaId) {
+      return NextResponse.json({ error: 'Empresa no asignada' }, { status: 400 });
+    }
+    query = query.where(eq(recolecciones.empresaId, session.user.empresaId)) as typeof query;
+  } else if (empresaId) {
+    query = query.where(eq(recolecciones.empresaId, empresaId)) as typeof query;
   }
 
-  const { data: recolecciones } = await query;
-  if (!recolecciones) return NextResponse.json({ error: 'DB error' }, { status: 500 });
+  const rows = await query;
+  const recoleccionesData = rows.map((row) => ({
+    tipo_material: row.tipo_material,
+    cantidad_kg: Number(row.cantidad_kg),
+    fecha_recoleccion: row.fecha_recoleccion,
+  }));
 
-  const metricas = calcularMetricas(recolecciones);
+  const metricas = calcularMetricas(recoleccionesData);
 
-  // Build monthly series for charts (last 12 months)
   const meses: Record<string, number> = {};
   const now = new Date();
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     meses[d.toISOString().slice(0, 7)] = 0;
   }
-  for (const r of recolecciones) {
-    const mes = r.fecha_recoleccion.slice(0, 7);
-    if (mes in meses) meses[mes] += Number(r.cantidad_kg);
+  for (const row of recoleccionesData) {
+    const mes = row.fecha_recoleccion.slice(0, 7);
+    if (mes in meses) meses[mes] += row.cantidad_kg;
   }
 
   const series = Object.entries(meses).map(([mes, kg]) => ({ mes, kg }));
-
-  // Material distribution
   const distribucion: Record<string, number> = {};
-  for (const r of recolecciones) {
-    distribucion[r.tipo_material] = (distribucion[r.tipo_material] ?? 0) + Number(r.cantidad_kg);
+  for (const row of recoleccionesData) {
+    distribucion[row.tipo_material] = (distribucion[row.tipo_material] ?? 0) + row.cantidad_kg;
   }
 
   return NextResponse.json({ metricas, series, distribucion });

@@ -1,71 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import type { Json } from '@/lib/database.types';
-import { extraerTextoDeImagenes } from '@/lib/ocr';
+import { eq, ilike } from 'drizzle-orm';
+import { db, empresas, extracciones, mensajesRecolector } from '@fundares/db';
 import { extraerDatosDeTexto } from '@/lib/claude';
+import { extraerTextoDeImagenes } from '@/lib/ocr';
 import { z } from 'zod';
 
 const ExtraerSchema = z.object({
   mensaje_id: z.string().uuid(),
 });
 
-/**
- * POST /api/extraer
- * Manually trigger AI extraction for a message
- */
 export async function POST(request: NextRequest) {
+  const secret = request.headers.get('x-internal-secret');
+  if (secret !== process.env.WEBHOOK_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { mensaje_id } = ExtraerSchema.parse(body);
+    const database = db();
 
-    const supabase = createSupabaseAdmin();
+    const [mensaje] = await database
+      .select()
+      .from(mensajesRecolector)
+      .where(eq(mensajesRecolector.id, mensaje_id))
+      .limit(1);
 
-    const { data: mensaje, error } = await supabase
-      .from('mensajes_recolector')
-      .select('*')
-      .eq('id', mensaje_id)
-      .single();
-
-    if (error || !mensaje) {
+    if (!mensaje) {
       return NextResponse.json({ error: 'Mensaje no encontrado' }, { status: 404 });
     }
 
-    await supabase
-      .from('mensajes_recolector')
-      .update({ estado: 'procesando' })
-      .eq('id', mensaje_id);
+    await database
+      .update(mensajesRecolector)
+      .set({ estado: 'procesando' })
+      .where(eq(mensajesRecolector.id, mensaje_id));
 
-    const textoOcr = await extraerTextoDeImagenes(mensaje.fotos_urls ?? []);
+    const textoOcr = await extraerTextoDeImagenes(mensaje.fotosUrls ?? []);
     const extraccion = await extraerDatosDeTexto(
-      mensaje.contenido_texto ?? '',
+      mensaje.contenidoTexto ?? '',
       textoOcr || undefined
     );
 
-    const { data: savedExtraccion, error: saveError } = await supabase
-      .from('extracciones')
-      .insert({
-        mensaje_id,
-        tipo_material: extraccion.tipo_material ?? 'desconocido',
-        cantidad_kg: extraccion.cantidad_kg ?? 0,
-        fecha_recoleccion:
-          extraccion.fecha ?? new Date().toISOString().split('T')[0],
-        confianza_ia: extraccion.confianza,
-        datos_raw: extraccion as unknown as Json,
-        estado: 'pendiente',
-      })
-      .select()
-      .single();
-
-    if (saveError) {
-      return NextResponse.json({ error: saveError.message }, { status: 500 });
+    let empresaId: string | null = null;
+    if (extraccion.empresa) {
+      const [emp] = await database
+        .select({ id: empresas.id })
+        .from(empresas)
+        .where(ilike(empresas.nombre, `%${extraccion.empresa}%`))
+        .limit(1);
+      empresaId = emp?.id ?? null;
     }
 
-    await supabase
-      .from('mensajes_recolector')
-      .update({ estado: 'extraido' })
-      .eq('id', mensaje_id);
+    const [savedExtraccion] = await database
+      .insert(extracciones)
+      .values({
+        mensajeId: mensaje_id,
+        empresaId,
+        tipoMaterial: extraccion.tipo_material ?? 'desconocido',
+        cantidadKg: String(extraccion.cantidad_kg ?? 0),
+        fechaRecoleccion:
+          extraccion.fecha ?? new Date().toISOString().split('T')[0],
+        confianzaIa: String(extraccion.confianza),
+        datosRaw: extraccion as unknown as Record<string, unknown>,
+        estado: 'pendiente',
+      })
+      .returning();
 
-    return NextResponse.json({ extraccion: savedExtraccion });
+    await database
+      .update(mensajesRecolector)
+      .set({ estado: 'extraido' })
+      .where(eq(mensajesRecolector.id, mensaje_id));
+
+    return NextResponse.json({
+      extraccion: savedExtraccion
+        ? {
+            id: savedExtraccion.id,
+            mensaje_id: savedExtraccion.mensajeId,
+            empresa_id: savedExtraccion.empresaId,
+            tipo_material: savedExtraccion.tipoMaterial,
+            cantidad_kg: Number(savedExtraccion.cantidadKg),
+            fecha_recoleccion: savedExtraccion.fechaRecoleccion,
+            confianza_ia: savedExtraccion.confianzaIa
+              ? Number(savedExtraccion.confianzaIa)
+              : null,
+            datos_raw: savedExtraccion.datosRaw,
+            estado: savedExtraccion.estado,
+            created_at: savedExtraccion.createdAt?.toISOString() ?? null,
+          }
+        : null,
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors }, { status: 400 });

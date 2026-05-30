@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
+import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, CheckSquare, Building2, BarChart3,
   BookOpen, FileText, LogOut, Recycle,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 
 const adminNav = [
   { href: '/admin/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
@@ -28,14 +28,13 @@ export function Sidebar({ rol }: { rol: 'admin' | 'empresa' }) {
   const nav      = rol === 'admin' ? adminNav : empresaNav;
 
   async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut({ redirect: false });
     router.push('/login');
+    router.refresh();
   }
 
   return (
     <aside className="w-60 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen sticky top-0">
-      {/* Brand */}
       <div className="px-5 py-5 flex items-center gap-3 border-b border-gray-100 dark:border-gray-800">
         <div className="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center">
           <Recycle className="w-5 h-5 text-white" />
@@ -46,7 +45,6 @@ export function Sidebar({ rol }: { rol: 'admin' | 'empresa' }) {
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         {nav.map(({ href, label, icon: Icon }) => (
           <Link
@@ -65,7 +63,6 @@ export function Sidebar({ rol }: { rol: 'admin' | 'empresa' }) {
         ))}
       </nav>
 
-      {/* Logout */}
       <div className="px-3 pb-4">
         <button
           onClick={handleLogout}

@@ -1,51 +1,63 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { count, eq } from 'drizzle-orm';
+import { db, empresas, extracciones, recolecciones } from '@fundares/db';
 import { MetricCard } from '@/components/MetricCard';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { BarChart } from '@/components/charts/BarChart';
 import { calcularMetricas } from '@/lib/metricas';
 import { Recycle, Building2, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
-  const supabase = await createServerSupabaseClient();
+  const database = db();
 
-  const [
-    { count: totalEmpresas },
-    { count: pendientes },
-    { data: recolecciones },
-    { data: extracciones },
-  ] = await Promise.all([
-    supabase.from('empresas').select('*', { count: 'exact', head: true }),
-    supabase.from('extracciones').select('*', { count: 'exact', head: true }).eq('estado', 'pendiente'),
-    supabase.from('recolecciones').select('tipo_material, cantidad_kg'),
-    supabase.from('extracciones').select('estado').limit(200),
-  ]);
+  const empresaCountResult = await database.select({ value: count() }).from(empresas);
+  const pendientesCountResult = await database
+    .select({ value: count() })
+    .from(extracciones)
+    .where(eq(extracciones.estado, 'pendiente'));
+  const recoleccionesRows = await database
+    .select({
+      tipo_material: recolecciones.tipoMaterial,
+      cantidad_kg: recolecciones.cantidadKg,
+    })
+    .from(recolecciones);
+  const extraccionesRows = await database
+    .select({ estado: extracciones.estado })
+    .from(extracciones)
+    .limit(200);
 
-  const metricas = calcularMetricas(recolecciones ?? []);
+  const empresaCount = empresaCountResult[0]!;
+  const pendientesCount = pendientesCountResult[0]!;
+
+  const recoleccionesData = recoleccionesRows.map((row) => ({
+    tipo_material: row.tipo_material,
+    cantidad_kg: Number(row.cantidad_kg),
+  }));
+
+  const metricas = calcularMetricas(recoleccionesData);
 
   const porMaterial = Object.entries(
-    (recolecciones ?? []).reduce<Record<string, number>>((acc, r) => {
-      acc[r.tipo_material] = (acc[r.tipo_material] ?? 0) + Number(r.cantidad_kg);
+    recoleccionesData.reduce<Record<string, number>>((acc, row) => {
+      acc[row.tipo_material] = (acc[row.tipo_material] ?? 0) + row.cantidad_kg;
       return acc;
     }, {})
   ).map(([name, value]) => ({ name, value: Math.round(value * 10) / 10 }));
 
-  const aprobadas = (extracciones ?? []).filter(e => e.estado === 'aprobado' || e.estado === 'corregido').length;
-  const rechazadas = (extracciones ?? []).filter(e => e.estado === 'rechazado').length;
+  const aprobadas = extraccionesRows.filter(
+    (row) => row.estado === 'aprobado' || row.estado === 'corregido'
+  ).length;
+  const rechazadas = extraccionesRows.filter((row) => row.estado === 'rechazado').length;
 
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
 
-      {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard label="Total reciclado" value={`${metricas.total_kg} kg`} icon={Recycle} color="green" />
-        <MetricCard label="Empresas activas" value={String(totalEmpresas ?? 0)} icon={Building2} color="blue" />
-        <MetricCard label="Pendientes validar" value={String(pendientes ?? 0)} icon={AlertCircle} color="yellow" />
+        <MetricCard label="Empresas activas" value={String(empresaCount.value)} icon={Building2} color="blue" />
+        <MetricCard label="Pendientes validar" value={String(pendientesCount.value)} icon={AlertCircle} color="yellow" />
         <MetricCard label="Aprobadas" value={String(aprobadas)} sub={`${rechazadas} rechazadas`} icon={CheckCircle} color="green" />
       </div>
 
-      {/* Chart */}
       <Card>
         <CardHeader><CardTitle>Reciclaje por material (total)</CardTitle></CardHeader>
         <CardBody>
@@ -56,7 +68,6 @@ export default async function AdminDashboardPage() {
         </CardBody>
       </Card>
 
-      {/* Impact */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="bg-green-50 dark:bg-green-900/20">
           <CardBody className="text-center py-5">

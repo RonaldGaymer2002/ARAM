@@ -1,17 +1,13 @@
 import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { Sidebar } from '@/components/Sidebar';
+import { getSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function EmpresaLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: perfil } = await supabase
-    .from('perfiles').select('rol').eq('id', user.id).single();
-  if (perfil?.rol !== 'empresa') redirect('/admin/dashboard');
+  const session = await getSession();
+  if (!session?.user?.id) redirect('/login');
+  if (session.user.rol !== 'empresa') redirect('/admin/dashboard');
 
   return (
     <div className="flex min-h-screen">
