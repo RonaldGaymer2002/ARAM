@@ -26,6 +26,7 @@
 
 import type {
   BedrockImageInput,
+  BedrockVideoInput,
   BedrockInvokeInput,
   IBedrockAdapter,
   TokenUsage,
@@ -35,7 +36,8 @@ import type {
 
 type NovaContentBlock =
   | { text: string }
-  | { image: { format: string; source: { bytes: string } } };
+  | { image: { format: string; source: { bytes: string } } }
+  | { video: { format: string; source: { s3Location: { uri: string } } } };
 
 interface NovaPayload {
   messages: Array<{ role: string; content: NovaContentBlock[] }>;
@@ -74,9 +76,10 @@ export class NovaAdapter implements IBedrockAdapter {
       temperature = 0,
     } = input;
 
-    // Build Nova content blocks: images first, then the text prompt.
+    // Build Nova content blocks: images/video first, then the text prompt.
     const content: NovaContentBlock[] = [
       ...(images ?? []).map((img) => this.imageBlock(img)),
+      ...(input.video ? [this.videoBlock(input.video)] : []),
       { text: userPrompt },
     ];
 
@@ -124,6 +127,16 @@ export class NovaAdapter implements IBedrockAdapter {
       image: {
         format,
         source: { bytes: img.base64 },
+      },
+    };
+  }
+
+  /** Nova video blocks reference an S3 URI — no byte transfer needed. */
+  private videoBlock(vid: BedrockVideoInput): NovaContentBlock {
+    return {
+      video: {
+        format: vid.format,
+        source: { s3Location: { uri: vid.s3Uri } },
       },
     };
   }

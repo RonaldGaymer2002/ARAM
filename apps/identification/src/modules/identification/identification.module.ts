@@ -1,5 +1,5 @@
 /**
- * Identification module — composition root.
+ * Extraction module — composition root.
  *
  * This file is the only place that:
  *   1. Wires concrete dependencies (S3Service, BedrockService + adapter, etc.)
@@ -10,6 +10,9 @@
  *   us.amazon.nova-*       → NovaAdapter   (cross-region inference profile)
  *   anthropic.claude-*     → ClaudeAdapter (direct model ID)
  *   us.anthropic.claude-*  → ClaudeAdapter (cross-region inference profile)
+ *
+ * Note: video extraction requires a Nova model (S3 URI content block).
+ * Claude adapters receive the video field but do not produce video content blocks.
  *
  * To switch models: update BEDROCK_MODEL_ID in infra/lib/base-stack.ts.
  * No code change required here.
@@ -36,7 +39,6 @@ function resolveAdapter(modelId?: string): IBedrockAdapter {
   if (modelId?.startsWith('amazon.nova') || modelId?.startsWith('us.amazon.nova')) {
     return new NovaAdapter(modelId);
   }
-  // Default: Claude (Haiku 4.5) — handles all anthropic.* and us.anthropic.* IDs.
   return new ClaudeAdapter(modelId);
 }
 
@@ -49,7 +51,6 @@ const bedrock = new BedrockService(
 );
 
 const service = new IdentificationService(storage, bedrock, {
-  confidenceThreshold: Number(process.env.CONFIDENCE_THRESHOLD ?? '0.85'),
   modelId: process.env.BEDROCK_MODEL_ID,
 });
 
@@ -59,13 +60,14 @@ const controller = new IdentificationController(service);
 
 const router = new Hono();
 
+router.post('/text',    (c) => controller.extractText(c));
 router.post('/presign', (c) => controller.presign(c));
-router.post('/verify',  (c) => controller.verify(c));
+router.post('/media',   (c) => controller.extractMedia(c));
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
 /**
  * The Hono router for this module — mount it in app.ts:
- *   v1.route('/identification', identificationRoute)
+ *   v1.route('/extract', identificationRoute)
  */
 export const identificationRoute = router;

@@ -4,8 +4,20 @@ The extraction service is called **server-side only** through Next.js Route Hand
 
 ```bash
 # .env.local
+# Obtain the value from the CDK output "ApiEndpoint" after deploy, then append /api/v1
 API_URL=https://<api-gateway-id>.execute-api.us-east-1.amazonaws.com/api/v1
 ```
+
+### Response envelope
+
+Every successful response is wrapped in `{ data: T }`:
+
+```json
+{ "data": { "sessionId": "…", "inputType": "text", "confidence": "high", "extracted": { … } } }
+```
+
+Error responses use `{ "error": { "code": "…", "message": "…" } }`.
+The client helpers below unwrap `data` before returning — do not unwrap again in components.
 
 ---
 
@@ -454,3 +466,17 @@ export function ExtractionOutput({ result }: { result: ExtractionResult }) {
 | Treating `422` as a fetch error | `422` is a valid structured response — the client handles it already |
 | Video over 2 minutes | Nova 2 Lite rejects it — trim before uploading |
 | Reusing a `sessionId` | Single-use — the S3 object is deleted after `/extract/media` |
+| Double-unwrapping the response | The helpers already do `const { data } = await res.json()` — return `data` directly |
+| Claude model with video | Video extraction requires a Nova model (`BEDROCK_MODEL_ID=us.amazon.nova-2-lite-v1:0`) — Claude adapters silently skip the video block |
+
+---
+
+## Model requirements
+
+| Input type | Minimum model | Notes |
+|---|---|---|
+| text | Any (Claude or Nova) | Cheapest: Nova 2 Lite |
+| image | Any (Claude or Nova) | Cheapest: Nova 2 Lite |
+| video | **Nova 2 Lite or higher** | S3-URI video blocks are Nova-only; Claude adapters do not support them |
+
+The default deployment sets `BEDROCK_MODEL_ID=us.amazon.nova-2-lite-v1:0`, which covers all three input types.

@@ -24,6 +24,13 @@ export interface BedrockImageInput {
   mimeType: string;
 }
 
+export interface BedrockVideoInput {
+  /** S3 URI of the video object (e.g. "s3://bucket/key"). Nova only. */
+  s3Uri: string;
+  /** Container format: "mp4", "mov", "avi", "mkv". */
+  format: string;
+}
+
 export interface BedrockInvokeInput {
   /** High-level instruction for the model (system role / preamble). */
   systemPrompt?: string;
@@ -31,6 +38,8 @@ export interface BedrockInvokeInput {
   userPrompt: string;
   /** Optional images to attach alongside the user prompt. */
   images?: BedrockImageInput[];
+  /** Optional video to attach (S3 URI — Nova models only). */
+  video?: BedrockVideoInput;
   /** Maximum tokens the model may generate. */
   maxTokens?: number;
   /** Sampling temperature (0 = deterministic). */

@@ -1,78 +1,68 @@
 /**
- * Data Transfer Objects for the identification module.
+ * Data Transfer Objects for the extraction module.
  *
  * DTOs define the exact shape of data crossing the HTTP boundary:
  *   - Request DTOs  — what the controller accepts from the client
  *   - Response DTOs — what the controller returns to the client
  *
- * Internal domain types (DocumentAnalysis, RejectedReason, …) live in
+ * Internal domain types (ExtractionAnalysis, InvocationCost, …) live in
  * `identification.types.ts` and never leave the service layer.
  */
 
-import type { RejectedReason } from './identification.types';
+import type { ExtractionConfidence, InputType, Material } from './identification.types';
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────
 
+export interface ExtractTextRequestDto {
+  /** Plain text message from the collector to analyse. */
+  message: string;
+}
+
 export interface PresignRequestDto {
-  /** MIME type of the image the client intends to upload (e.g. "image/jpeg"). */
+  /** MIME type of the file the client intends to upload (image or video). */
   mimeType: string;
 }
 
-export interface VerifyRequestDto {
-  /** Session token returned by POST /presign. */
+export interface ExtractMediaRequestDto {
+  /** Session token returned by POST /extract/presign. */
   sessionId: string;
+  /** Whether the uploaded file is an image or a video. */
+  type: 'image' | 'video';
 }
 
 // ── Response DTOs ─────────────────────────────────────────────────────────────
 
 export interface PresignResponseDto {
-  /** Opaque token — must be passed back to POST /verify. */
   sessionId: string;
-  /** Presigned S3 PUT URL valid for `expiresIn` seconds. */
   uploadUrl: string;
-  /** Seconds until the presigned URL expires. */
   expiresIn: number;
 }
 
-export interface VerificationDetailsDto {
-  isAdult: boolean;
-  appearsAuthentic: boolean;
-  imageQuality: 'good' | 'acceptable' | 'poor';
-  /** Model confidence 0.0–1.0. */
-  confidence: number;
-  /** Date of birth extracted from the document (YYYY-MM-DD). */
-  dob: string;
+export interface MaterialDto {
+  type: string;
+  quantity: number | null;
+  unit: 'kg' | 'unit' | null;
 }
 
-export interface InvocationCostDto {
-  inputTokens: number;
-  outputTokens: number;
-  /** USD cost for this single Bedrock call. */
-  costUsd: number;
+export interface ExtractionDataDto {
+  company: string | null;
+  date: string | null;
+  materials: MaterialDto[];
+  notes: string | null;
 }
 
-export interface VerificationCostDto {
-  /** Cost of gate #1 — pre-check (always present). */
-  preCheck: InvocationCostDto;
-  /**
-   * Cost of gate #2 — full analysis.
-   * `null` when the pre-check rejected the image and the full analysis was skipped.
-   */
-  analysis: InvocationCostDto | null;
-  /** Total USD cost across all Bedrock calls made during this verification. */
-  totalCostUsd: number;
-}
-
-export interface VerificationResponseDto {
+export interface ExtractionResultDto {
   sessionId: string;
-  /** True only when ALL checks pass. */
-  approved: boolean;
-  details: VerificationDetailsDto;
-  /** Empty when approved; one or more rejection codes when not. */
-  rejectedReasons: RejectedReason[];
-  /** Token usage and USD cost for every Bedrock call made during this verification. */
-  cost: VerificationCostDto;
+  inputType: InputType;
+  confidence: ExtractionConfidence;
+  extracted: ExtractionDataDto | null;
+  rejectedReasons?: string[];
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
 // Error responses use IApiErrorResponse from common/interfaces — not defined here.
+
+// Ensure Material and MaterialDto stay in sync.
+type _MaterialCheck = Material extends MaterialDto ? true : never;
+const _: _MaterialCheck = true;
+void _;
