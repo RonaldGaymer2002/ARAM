@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request });
@@ -10,9 +10,12 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll:    () => request.cookies.getAll(),
-        setAll: (pairs) => pairs.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        ),
+        setAll: (
+          pairs: { name: string; value: string; options: CookieOptions }[]
+        ) =>
+          pairs.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          ),
       },
     },
   );

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Leaf, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {

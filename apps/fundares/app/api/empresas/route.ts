@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { z } from 'zod';
 
 const EmpresaSchema = z.object({

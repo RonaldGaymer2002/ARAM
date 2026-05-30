@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import type { Json } from '@/lib/database.types';
 import { extraerTextoDeImagenes } from '@/lib/ocr';
 import { extraerDatosDeTexto } from '@/lib/claude';
 
@@ -92,7 +93,7 @@ async function procesarMensajeEnBackground(
         cantidad_kg: extraccion.cantidad_kg ?? 0,
         fecha_recoleccion: extraccion.fecha ?? new Date().toISOString().split('T')[0],
         confianza_ia: extraccion.confianza,
-        datos_raw: extraccion as Record<string, unknown>,
+        datos_raw: extraccion as unknown as Json,
         estado: 'pendiente',
       });
       return;
@@ -105,7 +106,7 @@ async function procesarMensajeEnBackground(
       cantidad_kg: extraccion.cantidad_kg,
       fecha_recoleccion: extraccion.fecha,
       confianza_ia: extraccion.confianza,
-      datos_raw: extraccion as Record<string, unknown>,
+      datos_raw: extraccion as unknown as Json,
       estado: 'pendiente',
     });
 

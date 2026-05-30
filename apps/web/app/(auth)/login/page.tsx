@@ -3,12 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Recycle } from 'lucide-react';
 
 export default function LoginPage() {
   const router   = useRouter();
-  const supabase = createClient();
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -18,6 +17,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
+    const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error || !data.user) {

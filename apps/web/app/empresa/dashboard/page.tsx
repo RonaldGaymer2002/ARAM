@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { MetricCard } from '@/components/MetricCard';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,7 +20,6 @@ export default function EmpresaDashboardPage() {
   const [data,    setData]    = useState<DashData | null>(null);
   const [tips,    setTips]    = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     async function cargar() {
@@ -31,6 +30,7 @@ export default function EmpresaDashboardPage() {
     }
     cargar();
 
+    const supabase = createClient();
     const channel = supabase.channel('recolecciones-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'recolecciones' }, cargar)
       .subscribe();

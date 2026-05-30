@@ -31,6 +31,7 @@ export interface Database {
           contacto_email?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       perfiles: {
         Row: {
@@ -51,6 +52,7 @@ export interface Database {
           empresa_id?: string | null;
           nombre?: string | null;
         };
+        Relationships: [];
       };
       mensajes_recolector: {
         Row: {
@@ -74,6 +76,7 @@ export interface Database {
           recibido_at?: string;
           estado?: 'pendiente' | 'procesando' | 'extraido' | 'validado' | 'rechazado';
         };
+        Relationships: [];
       };
       extracciones: {
         Row: {
@@ -115,6 +118,7 @@ export interface Database {
           corregido_por?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       recolecciones: {
         Row: {
@@ -147,6 +151,7 @@ export interface Database {
           validado_por?: string | null;
           validado_at?: string;
         };
+        Relationships: [];
       };
       contenido_educativo: {
         Row: {
@@ -179,10 +184,12 @@ export interface Database {
           publicado?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/admin';
 import { generarReportePDF } from '@/lib/pdf';
 
 export async function GET(req: NextRequest) {
@@ -34,9 +35,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const buffer = await generarReportePDF(empresa, recolecciones, anio);
+  const pdfBytes = await generarReportePDF(empresa, recolecciones, anio);
 
-  return new NextResponse(buffer, {
+  return new NextResponse(pdfBytes as unknown as BodyInit, {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="reporte-${empresa.nombre}-${anio}.pdf"`,

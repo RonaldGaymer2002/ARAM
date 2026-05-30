@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { Sidebar } from '@/components/Sidebar';
+
+export const dynamic = 'force-dynamic';
 
 export default async function EmpresaLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();

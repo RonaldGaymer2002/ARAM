@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 
 interface NavItem {

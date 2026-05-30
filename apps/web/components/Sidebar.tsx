@@ -7,7 +7,7 @@ import {
   LayoutDashboard, CheckSquare, Building2, BarChart3,
   BookOpen, FileText, LogOut, Recycle,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 const adminNav = [
   { href: '/admin/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },

@@ -127,6 +127,15 @@ export async function generarReportePDF(
 ): Promise<Buffer> {
   const metricas = calcularMetricas(recolecciones);
   const doc      = React.createElement(ReportePDF, { empresa, recolecciones, anio, metricas });
-  const blob     = await pdf(doc as any).toBuffer();
-  return blob;
+  const blob     = await pdf(doc as Parameters<typeof pdf>[0]).toBuffer();
+
+  if (Buffer.isBuffer(blob)) {
+    return blob;
+  }
+
+  if (blob instanceof Uint8Array) {
+    return Buffer.from(blob);
+  }
+
+  return Buffer.from(await new Response(blob as unknown as ReadableStream).arrayBuffer());
 }

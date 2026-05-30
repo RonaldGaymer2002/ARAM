@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
+import type { Json } from '@/lib/database.types';
 import { extraerTextoDeImagenes } from '@/lib/ocr';
 import { extraerDatosDeTexto } from '@/lib/claude';
 import { z } from 'zod';
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
         fecha_recoleccion:
           extraccion.fecha ?? new Date().toISOString().split('T')[0],
         confianza_ia: extraccion.confianza,
-        datos_raw: extraccion as Record<string, unknown>,
+        datos_raw: extraccion as unknown as Json,
         estado: 'pendiente',
       })
       .select()

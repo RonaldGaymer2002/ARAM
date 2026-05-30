@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase';
+import { createSupabaseAdmin } from '@/lib/supabase/admin';
 import { z } from 'zod';
 
 const ValidarSchema = z.object({
@@ -125,7 +125,11 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const estado = searchParams.get('estado') ?? 'pendiente';
+  const rawEstado = searchParams.get('estado') ?? 'pendiente';
+  const estadosValidos = ['pendiente', 'aprobado', 'rechazado', 'corregido'] as const;
+  const estado = estadosValidos.includes(rawEstado as (typeof estadosValidos)[number])
+    ? (rawEstado as (typeof estadosValidos)[number])
+    : 'pendiente';
 
   const supabase = createSupabaseAdmin();
 

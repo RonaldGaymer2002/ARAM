@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { ValidacionCard } from '@/components/ValidacionCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -11,9 +11,9 @@ export default function ValidacionPage() {
   const [extracciones, setExtracciones] = useState<Extraccion[]>([]);
   const [empresas,     setEmpresas]     = useState<Empresa[]>([]);
   const [loading,      setLoading]      = useState(true);
-  const supabase = createClient();
 
   const cargar = useCallback(async () => {
+    const supabase = createClient();
     setLoading(true);
     const [{ data: exts }, { data: emps }] = await Promise.all([
       supabase
@@ -31,6 +31,7 @@ export default function ValidacionPage() {
   useEffect(() => {
     cargar();
 
+    const supabase = createClient();
     // Realtime subscription
     const channel = supabase.channel('extracciones-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'extracciones' }, cargar)
