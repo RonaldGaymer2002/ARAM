@@ -10,7 +10,7 @@ export default withAuth(
       return NextResponse.redirect(new URL('/empresa/dashboard', req.url));
     }
 
-    if (path.startsWith('/empresa') && token?.rol !== 'empresa') {
+    if (path.startsWith('/empresa') && token?.rol !== 'empresa' && token?.rol !== 'admin') {
       return NextResponse.redirect(new URL('/admin/dashboard', req.url));
     }
 
