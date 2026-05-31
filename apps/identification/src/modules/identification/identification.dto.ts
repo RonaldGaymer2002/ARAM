@@ -51,12 +51,22 @@ export interface ExtractionDataDto {
   notes: string | null;
 }
 
+export interface ExtractionUsageDto {
+  inputTokens: number;
+  outputTokens: number;
+  /** USD cost for this invocation, rounded to 8 decimal places. */
+  costUsd: number;
+  /** The Bedrock model ID that was actually used. */
+  modelId: string;
+}
+
 export interface ExtractionResultDto {
   sessionId: string;
   inputType: InputType;
   confidence: ExtractionConfidence;
   extracted: ExtractionDataDto | null;
   rejectedReasons?: string[];
+  usage: ExtractionUsageDto;
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────

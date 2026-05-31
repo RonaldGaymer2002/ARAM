@@ -54,12 +54,20 @@ export interface ExtractionData {
 export type ExtractionConfidence = 'high' | 'medium' | 'low';
 export type InputType = 'text' | 'image' | 'video';
 
+export interface ExtractionUsage {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  modelId: string;
+}
+
 export interface ExtractionResult {
   sessionId: string;
   inputType: InputType;
   confidence: ExtractionConfidence;
   extracted: ExtractionData | null;
   rejectedReasons?: string[];
+  usage: ExtractionUsage;
 }
 
 // ── Internal Bedrock response shape ──────────────────────────────────────────
