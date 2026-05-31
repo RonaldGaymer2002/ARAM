@@ -94,6 +94,9 @@ const PRICING_TABLE: PricingEntry[] = [
   // ── Claude Opus 4.x ──────────────────────────────────────────────────────
   { prefix: 'us.anthropic.claude-opus-4',     inputPerMToken: 15.00, outputPerMToken: 75.00 },
   { prefix: 'anthropic.claude-opus-4',        inputPerMToken: 15.00, outputPerMToken: 75.00 },
+  // ── Amazon Nova 2 Lite — must come before nova-lite (longer prefix) ──────
+  { prefix: 'us.amazon.nova-2-lite',          inputPerMToken: 0.10,  outputPerMToken: 0.40  },
+  { prefix: 'amazon.nova-2-lite',             inputPerMToken: 0.10,  outputPerMToken: 0.40  },
   // ── Amazon Nova Lite ─────────────────────────────────────────────────────
   { prefix: 'us.amazon.nova-lite',            inputPerMToken: 0.06,  outputPerMToken: 0.24  },
   { prefix: 'amazon.nova-lite',               inputPerMToken: 0.06,  outputPerMToken: 0.24  },

@@ -129,6 +129,21 @@ describe('computeCost()', () => {
     expect(cost.costUsd).toBeCloseTo(4.00, 6);
   });
 
+  it('calculates Nova 2 Lite cost correctly (cross-region prefix)', () => {
+    // $0.10/1M in + $0.40/1M out → 1M each = $0.50
+    const cost = computeCost(
+      { inputTokens: 1_000_000, outputTokens: 1_000_000 },
+      'us.amazon.nova-2-lite-v1:0',
+    );
+    expect(cost.costUsd).toBeCloseTo(0.50, 6);
+  });
+
+  it('does NOT match nova-lite prefix for nova-2-lite model', () => {
+    const nova2    = computeCost({ inputTokens: 1_000_000, outputTokens: 1_000_000 }, 'us.amazon.nova-2-lite-v1:0');
+    const novaLite = computeCost({ inputTokens: 1_000_000, outputTokens: 1_000_000 }, 'us.amazon.nova-lite-v1:0');
+    expect(nova2.costUsd).not.toBe(novaLite.costUsd);
+  });
+
   it('matches on "anthropic.claude-haiku-4-5" (on-demand prefix, no region)', () => {
     const cost = computeCost(
       { inputTokens: 1_000_000, outputTokens: 1_000_000 },

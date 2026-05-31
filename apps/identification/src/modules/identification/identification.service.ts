@@ -37,6 +37,8 @@ const SCHEMA_HINT =
   '- company: name of the company or person providing materials (null if absent)\n' +
   '- date: collection date YYYY-MM-DD (null if absent or unclear — do not guess)\n' +
   '- materials: each item collected; unit is "kg" for weight, "unit" for individual items\n' +
+  '  Normalize the "type" field: correct obvious spelling errors and use standard Spanish\n' +
+  '  (e.g. "bevida" → "bebida", "papell" → "papel", "plastico" stays "plastico")\n' +
   '- notes: any additional relevant info not captured above (null if none)\n' +
   '- confidence: 0.0–1.0 reflecting extraction certainty\n' +
   '- rejected: true only when the input contains no recycling collection data at all\n' +
