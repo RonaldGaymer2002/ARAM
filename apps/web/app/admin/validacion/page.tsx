@@ -35,7 +35,7 @@ export default function ValidacionPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Validación de extracciones</h1>
+        <h1 className="text-2xl font-bold text-black-heading">Validación de extracciones</h1>
         {!loading && <Badge variant="yellow">{extracciones.length} pendientes</Badge>}
       </div>
 
@@ -44,7 +44,7 @@ export default function ValidacionPage() {
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-full" />)}
         </div>
       ) : extracciones.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-20 text-body-text/70">
           <p className="text-lg">Sin extracciones pendientes 🎉</p>
         </div>
       ) : (

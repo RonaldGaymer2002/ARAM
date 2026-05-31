@@ -42,27 +42,29 @@ export function Sidebar({ rol }: { rol: 'admin' | 'empresa' }) {
   }
 
   return (
-    <aside className="w-60 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen sticky top-0">
-      <div className="px-5 py-5 flex items-center gap-3 border-b border-gray-100 dark:border-gray-800">
-        <div className="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center">
-          <Recycle className="w-5 h-5 text-white" />
+    <aside className="w-60 shrink-0 bg-white border-r border-border-default flex flex-col h-screen sticky top-0">
+      <div className="px-5 py-6 flex items-center gap-3 border-b border-border-default">
+        <div className="w-9 h-9 bg-green-primary rounded-[8px] flex items-center justify-center shrink-0">
+          <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-white fill-none stroke-2 [stroke-linecap:round] [stroke-linejoin:round]">
+            <path d="M12 22V12M12 12C12 7 7 5 3 7M12 12C12 7 17 5 21 7"/><circle cx="12" cy="12" r="2"/>
+          </svg>
         </div>
         <div>
-          <p className="font-bold text-sm text-gray-900 dark:text-white">Fundares</p>
-          <p className="text-xs text-gray-400 capitalize">{rol}</p>
+          <p className="font-extrabold text-[15px] text-black-heading tracking-tight leading-none mb-1">Fundares</p>
+          <p className="text-[11px] font-semibold text-body-text uppercase tracking-widest leading-none">{rol}</p>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-4 py-6 space-y-1">
         {nav.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
             className={clsx(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
+              'flex items-center gap-3 px-3 py-2.5 rounded-[5px] text-sm transition-colors',
               pathname === href
-                ? 'bg-primary-50 text-primary-700 font-medium dark:bg-primary-900/30 dark:text-primary-400'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800',
+                ? 'bg-green-light text-green-primary font-bold'
+                : 'text-body-text font-semibold hover:bg-bg-page hover:text-black-heading',
             )}
           >
             <Icon className="w-4 h-4" />
@@ -71,10 +73,10 @@ export function Sidebar({ rol }: { rol: 'admin' | 'empresa' }) {
         ))}
       </nav>
 
-      <div className="px-3 pb-4">
+      <div className="px-4 pb-6">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 w-full transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-[5px] text-sm font-semibold text-body-text hover:bg-bg-page hover:text-black-heading w-full transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Cerrar sesión

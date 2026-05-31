@@ -38,18 +38,18 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
+      <div className="bg-white rounded-card shadow-card rounded-2xl shadow-xl p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-primary-600 rounded-2xl flex items-center justify-center mb-3">
             <Recycle className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Fundares</h1>
-          <p className="text-gray-500 text-sm mt-1">Recycling Platform</p>
+          <h1 className="text-2xl font-bold text-black-heading">Fundares</h1>
+          <p className="text-body-text text-sm mt-1">Recycling Platform</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-black-heading  mb-1">
               Email
             </label>
             <input
@@ -57,13 +57,13 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500  "
               placeholder="admin@fundares.org"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-black-heading  mb-1">
               Contraseña
             </label>
             <input
@@ -71,7 +71,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700"
+              className="w-full px-3 py-2 border border-border-default rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500  "
               placeholder="••••••••"
             />
           </div>

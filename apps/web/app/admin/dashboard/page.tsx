@@ -49,7 +49,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-black-heading">Dashboard</h1>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard label="Total reciclado" value={`${metricas.total_kg} kg`} icon={Recycle} color="green" />
@@ -63,7 +63,7 @@ export default async function AdminDashboardPage() {
         <CardBody>
           {porMaterial.length > 0
             ? <BarChart data={porMaterial} />
-            : <p className="text-sm text-gray-400 py-8 text-center">Sin datos aún</p>
+            : <p className="text-sm text-body-text/70 py-8 text-center">Sin datos aún</p>
           }
         </CardBody>
       </Card>
@@ -72,19 +72,19 @@ export default async function AdminDashboardPage() {
         <Card className="bg-green-50 dark:bg-green-900/20">
           <CardBody className="text-center py-5">
             <p className="text-3xl font-bold text-primary-600">{metricas.co2_kg}</p>
-            <p className="text-sm text-gray-500 mt-1">kg CO₂ evitado</p>
+            <p className="text-sm text-body-text mt-1">kg CO₂ evitado</p>
           </CardBody>
         </Card>
         <Card className="bg-blue-50 dark:bg-blue-900/20">
           <CardBody className="text-center py-5">
             <p className="text-3xl font-bold text-blue-600">{metricas.agua_litros.toLocaleString()}</p>
-            <p className="text-sm text-gray-500 mt-1">litros de agua ahorrados</p>
+            <p className="text-sm text-body-text mt-1">litros de agua ahorrados</p>
           </CardBody>
         </Card>
         <Card className="bg-yellow-50 dark:bg-yellow-900/20">
           <CardBody className="text-center py-5">
             <p className="text-3xl font-bold text-yellow-600">{metricas.arboles}</p>
-            <p className="text-sm text-gray-500 mt-1">árboles equivalentes</p>
+            <p className="text-sm text-body-text mt-1">árboles equivalentes</p>
           </CardBody>
         </Card>
       </div>

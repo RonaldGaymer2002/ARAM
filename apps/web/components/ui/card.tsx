@@ -2,14 +2,14 @@ import { clsx } from 'clsx';
 
 export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={clsx('bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm', className)}>
+    <div className={clsx('bg-white rounded-card border border-border-default shadow-card', className)}>
       {children}
     </div>
   );
 }
 
 export function CardHeader({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={clsx('px-5 py-4 border-b border-gray-100 dark:border-gray-800', className)}>{children}</div>;
+  return <div className={clsx('px-5 py-4 border-b border-border-default', className)}>{children}</div>;
 }
 
 export function CardBody({ className, children }: { className?: string; children: React.ReactNode }) {
@@ -17,5 +17,5 @@ export function CardBody({ className, children }: { className?: string; children
 }
 
 export function CardTitle({ children }: { children: React.ReactNode }) {
-  return <h3 className="font-semibold text-gray-900 dark:text-white">{children}</h3>;
+  return <h3 className="font-bold text-black-heading">{children}</h3>;
 }

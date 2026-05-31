@@ -49,13 +49,13 @@ export default async function EducacionPage({
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Educación ambiental</h1>
+      <h1 className="text-2xl font-bold text-black-heading">Educación ambiental</h1>
 
       {allTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
           <a
             href="/empresa/educacion"
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!tag ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${!tag ? 'bg-primary-600 text-white' : 'bg-gray-100 text-body-text hover:bg-gray-200'}`}
           >
             Todos
           </a>
@@ -63,7 +63,7 @@ export default async function EducacionPage({
             <a
               key={t}
               href={`/empresa/educacion?tag=${t}`}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${tag === t ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${tag === t ? 'bg-primary-600 text-white' : 'bg-gray-100 text-body-text hover:bg-gray-200'}`}
             >
               {t}
             </a>
@@ -72,7 +72,7 @@ export default async function EducacionPage({
       )}
 
       {items.length === 0 ? (
-        <p className="text-center text-gray-400 py-20">Sin contenido publicado aún</p>
+        <p className="text-center text-body-text/70 py-20">Sin contenido publicado aún</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {items.map((item) => {
@@ -87,7 +87,7 @@ export default async function EducacionPage({
                     <Badge variant={colorTipo[item.tipo ?? 'articulo']}>{item.tipo}</Badge>
                   </div>
 
-                  <h3 className="font-semibold text-gray-900 dark:text-white leading-snug">{item.titulo}</h3>
+                  <h3 className="font-semibold text-black-heading leading-snug">{item.titulo}</h3>
 
                   {item.tipo === 'video' && item.url ? (
                     <div className="aspect-video rounded-lg overflow-hidden bg-black">
@@ -106,7 +106,7 @@ export default async function EducacionPage({
                   {item.tags && item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-1">
                       {item.tags.map((t) => (
-                        <span key={t} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                        <span key={t} className="text-xs bg-gray-100 text-body-text px-2 py-0.5 rounded-full">
                           {t}
                         </span>
                       ))}

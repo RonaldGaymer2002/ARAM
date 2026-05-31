@@ -62,18 +62,18 @@ export function ValidacionCard({ extraccion, empresas, onActualizar }: Validacio
               IA {Math.round((extraccion.confianza_ia ?? 0) * 100)}%
             </Badge>
           </div>
-          <button onClick={() => setExpanded(v => !v)} className="text-gray-400 hover:text-gray-600">
+          <button onClick={() => setExpanded(v => !v)} className="text-body-text/70 hover:text-body-text">
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-1">{new Date(extraccion.created_at).toLocaleString('es-BO')}</p>
+        <p className="text-xs text-body-text/70 mt-1">{new Date(extraccion.created_at).toLocaleString('es-BO')}</p>
       </CardHeader>
 
       <CardBody className="space-y-4">
         {/* Mensaje original */}
         {extraccion.mensajes_recolector?.contenido_texto && (
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-300">
-            <p className="text-xs font-medium text-gray-400 mb-1">Mensaje original</p>
+          <div className="bg-bg-page rounded-lg p-3 text-sm text-body-text ">
+            <p className="text-xs font-medium text-body-text/70 mb-1">Mensaje original</p>
             {extraccion.mensajes_recolector.contenido_texto}
           </div>
         )}
@@ -82,11 +82,11 @@ export function ValidacionCard({ extraccion, empresas, onActualizar }: Validacio
         {editando ? (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Empresa</label>
+              <label className="text-xs text-body-text mb-1 block">Empresa</label>
               <select
                 value={empresaId}
                 onChange={e => setEmpresaId(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700"
+                className="w-full border border-border-default rounded-lg px-3 py-1.5 text-sm  "
               >
                 <option value="">Sin empresa</option>
                 {empresas.map(emp => (
@@ -95,11 +95,11 @@ export function ValidacionCard({ extraccion, empresas, onActualizar }: Validacio
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Material</label>
+              <label className="text-xs text-body-text mb-1 block">Material</label>
               <select
                 value={material}
                 onChange={e => setMaterial(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700"
+                className="w-full border border-border-default rounded-lg px-3 py-1.5 text-sm  "
               >
                 {['plastico','papel','vidrio','metal','carton','electronico','organico'].map(m => (
                   <option key={m} value={m}>{m}</option>
@@ -107,28 +107,28 @@ export function ValidacionCard({ extraccion, empresas, onActualizar }: Validacio
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Cantidad (kg)</label>
+              <label className="text-xs text-body-text mb-1 block">Cantidad (kg)</label>
               <input
                 type="number" step="0.01" value={cantidad}
                 onChange={e => setCantidad(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700"
+                className="w-full border border-border-default rounded-lg px-3 py-1.5 text-sm  "
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Fecha</label>
+              <label className="text-xs text-body-text mb-1 block">Fecha</label>
               <input
                 type="date" value={fecha}
                 onChange={e => setFecha(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-700"
+                className="w-full border border-border-default rounded-lg px-3 py-1.5 text-sm  "
               />
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div><span className="text-gray-400">Material: </span><span className="font-medium capitalize">{extraccion.tipo_material}</span></div>
-            <div><span className="text-gray-400">Cantidad: </span><span className="font-medium">{extraccion.cantidad_kg} kg</span></div>
-            <div><span className="text-gray-400">Fecha: </span><span className="font-medium">{extraccion.fecha_recoleccion}</span></div>
-            <div><span className="text-gray-400">Empresa ID: </span><span className="font-medium text-xs">{extraccion.empresa_id ?? '—'}</span></div>
+            <div><span className="text-body-text/70">Material: </span><span className="font-medium capitalize">{extraccion.tipo_material}</span></div>
+            <div><span className="text-body-text/70">Cantidad: </span><span className="font-medium">{extraccion.cantidad_kg} kg</span></div>
+            <div><span className="text-body-text/70">Fecha: </span><span className="font-medium">{extraccion.fecha_recoleccion}</span></div>
+            <div><span className="text-body-text/70">Empresa ID: </span><span className="font-medium text-xs">{extraccion.empresa_id ?? '—'}</span></div>
           </div>
         )}
 

@@ -145,7 +145,7 @@ function TabSwitcher({ activeTab, onChange }: { activeTab: TabId; onChange: (tab
           role="tab"
           aria-selected={activeTab === tab.id}
           onClick={() => onChange(tab.id)}
-          className={`flex-1 py-4 text-sm transition-colors duration-200 outline-none focus-visible:bg-gray-50 ${
+          className={`flex-1 py-4 text-sm transition-colors duration-200 outline-none focus-visible:bg-bg-page ${
             activeTab === tab.id ? 'text-green-primary font-bold' : 'text-body-text font-normal hover:text-black-heading'
           }`}
         >
@@ -272,7 +272,7 @@ function VideoTab({ onSubmit, isLoading }: { onSubmit: () => void; isLoading: bo
           <p className="text-[13px] text-body-text text-center">Máx. 2 minutos · Tamaño recomendado &lt; 100 MB</p>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-8 bg-gray-50 rounded-input border border-border-default">
+        <div className="flex flex-col items-center justify-center py-8 bg-bg-page rounded-input border border-border-default">
           <motion.div initial={{ opacity: 0, scale: 0.7, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={spring} className="bg-green-light text-green-primary font-semibold rounded-full px-4 py-1.5 flex items-center space-x-2">
             <FileText size={16} />
             <span className="truncate max-w-[200px] text-sm">{file.name}</span>

@@ -23,21 +23,21 @@ export default function EmpresaReportesPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-lg">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mis reportes</h1>
+      <h1 className="text-2xl font-bold text-black-heading">Mis reportes</h1>
 
       <Card>
         <CardHeader><CardTitle>Reporte anual PDF</CardTitle></CardHeader>
         <CardBody className="space-y-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-body-text">
             Descarga el reporte completo de reciclaje de tu empresa para el año seleccionado.
             Incluye métricas de impacto ambiental, desglose por material y comparativa mensual.
           </p>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Año</label>
+            <label className="text-xs text-body-text mb-1 block">Año</label>
             <input
               type="number" value={anio} onChange={e => setAnio(Number(e.target.value))}
               min={2020} max={new Date().getFullYear()}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700"
+              className="w-full border border-border-default rounded-lg px-3 py-2 text-sm  "
             />
           </div>
           <Button onClick={handleDescargar} disabled={generando} className="w-full">

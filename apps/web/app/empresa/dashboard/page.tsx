@@ -41,7 +41,7 @@ export default function EmpresaDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mi impacto ambiental</h1>
+      <h1 className="text-2xl font-bold text-black-heading">Mi impacto ambiental</h1>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard loading={loading} label="Total reciclado" value={`${data?.metricas.total_kg ?? 0} kg`} icon={Recycle} color="green" />
@@ -66,7 +66,7 @@ export default function EmpresaDashboardPage() {
             ) : pieData.length > 0 ? (
               <PieChart data={pieData} />
             ) : (
-              <p className="text-center text-gray-400 py-20">Sin datos aún</p>
+              <p className="text-center text-body-text/70 py-20">Sin datos aún</p>
             )}
           </CardBody>
         </Card>
