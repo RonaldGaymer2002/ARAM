@@ -6,7 +6,7 @@ import { clsx } from 'clsx';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, CheckSquare, Building2, BarChart3,
-  BookOpen, FileText, LogOut, Recycle,
+  BookOpen, FileText, LogOut, Recycle, PlusCircle,
 } from 'lucide-react';
 
 const adminNav = [
@@ -18,6 +18,7 @@ const adminNav = [
 
 const empresaNav = [
   { href: '/empresa/dashboard', label: 'Dashboard',  icon: LayoutDashboard },
+  { href: '/empresa/extraer',   label: 'Recolectar', icon: PlusCircle },
   { href: '/empresa/educacion', label: 'Educación',  icon: BookOpen },
   { href: '/empresa/reportes',  label: 'Reportes',   icon: FileText },
 ];

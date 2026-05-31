@@ -15,8 +15,11 @@ export default withAuth(
     }
 
     if (path === '/') {
-      const dest = token?.rol === 'admin' ? '/admin/dashboard' : '/empresa/dashboard';
-      return NextResponse.redirect(new URL(dest, req.url));
+      if (token) {
+        const dest = token.rol === 'admin' ? '/admin/dashboard' : '/empresa/dashboard';
+        return NextResponse.redirect(new URL(dest, req.url));
+      }
+      return NextResponse.next();
     }
 
     return NextResponse.next();
@@ -26,6 +29,7 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
         if (
+          path === '/' ||
           path.startsWith('/api/webhook') ||
           path.startsWith('/api/auth') ||
           path === '/login'
