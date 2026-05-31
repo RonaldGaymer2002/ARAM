@@ -19,6 +19,7 @@ import type {
   ExtractionAnalysis,
   ExtractionConfidence,
   ExtractionResult,
+  ExtractionUsage,
   InputType,
   PresignResponse,
 } from './identification.types';
@@ -122,7 +123,8 @@ export class IdentificationService extends BaseService {
 
     const analysis = JSON.parse(output.text) as ExtractionAnalysis;
     const cost     = computeCost(output.usage, output.modelId);
-    const result   = this.buildResult(sessionId, 'text', analysis);
+    const usage: ExtractionUsage = { ...cost, modelId: output.modelId };
+    const result   = this.buildResult(sessionId, 'text', analysis, usage);
 
     this.logger.info('Text extraction complete', {
       sessionId,
@@ -157,7 +159,8 @@ export class IdentificationService extends BaseService {
 
       const analysis = JSON.parse(output.text) as ExtractionAnalysis;
       const cost     = computeCost(output.usage, output.modelId);
-      const result   = this.buildResult(sessionId, type, analysis);
+      const usage: ExtractionUsage = { ...cost, modelId: output.modelId };
+      const result   = this.buildResult(sessionId, type, analysis, usage);
 
       this.logger.info('Media extraction complete', {
         sessionId,
@@ -223,6 +226,7 @@ export class IdentificationService extends BaseService {
     sessionId: string,
     inputType: InputType,
     analysis: ExtractionAnalysis,
+    usage: ExtractionUsage,
   ): ExtractionResult {
     const confidence = this.mapConfidence(analysis.confidence);
     const isRejected = analysis.rejected || confidence === 'low';
@@ -236,6 +240,7 @@ export class IdentificationService extends BaseService {
         rejectedReasons: analysis.rejectedReasons.length > 0
           ? analysis.rejectedReasons
           : ['low_confidence'],
+        usage,
       };
     }
 
@@ -249,6 +254,7 @@ export class IdentificationService extends BaseService {
         materials: analysis.materials,
         notes:     analysis.notes,
       },
+      usage,
     };
   }
 }

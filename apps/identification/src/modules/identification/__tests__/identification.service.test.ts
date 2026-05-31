@@ -152,6 +152,16 @@ describe('extractText() — happy path', () => {
     expect(result.extracted?.materials).toHaveLength(1);
   });
 
+  it('includes usage with token counts, costUsd, and modelId', async () => {
+    const bedrock = makeBedrock(bedrockOutput(analysisJson(), MODEL_HAIKU, USAGE_SMALL));
+    const result  = await makeService(bedrock, makeS3()).extractText('msg');
+
+    expect(result.usage.inputTokens).toBe(USAGE_SMALL.inputTokens);
+    expect(result.usage.outputTokens).toBe(USAGE_SMALL.outputTokens);
+    expect(result.usage.costUsd).toBeGreaterThan(0);
+    expect(result.usage.modelId).toBe(MODEL_HAIKU);
+  });
+
   it('inputType is always "text"', async () => {
     const bedrock = makeBedrock(bedrockOutput(analysisJson(), MODEL_HAIKU));
     const result  = await makeService(bedrock, makeS3()).extractText('some message');
@@ -225,6 +235,16 @@ describe('extractMedia() — image happy path', () => {
     expect(result.inputType).toBe('image');
     expect(result.confidence).toBe('high');
     expect(result.extracted).not.toBeNull();
+  });
+
+  it('includes usage with token counts and costUsd', async () => {
+    const bedrock = makeBedrock(bedrockOutput(analysisJson(), MODEL_NOVA, USAGE_LARGE));
+    const result  = await makeService(bedrock, makeS3()).extractMedia('session-abc', 'image');
+
+    expect(result.usage.inputTokens).toBe(USAGE_LARGE.inputTokens);
+    expect(result.usage.outputTokens).toBe(USAGE_LARGE.outputTokens);
+    expect(result.usage.costUsd).toBeGreaterThan(0);
+    expect(result.usage.modelId).toBe(MODEL_NOVA);
   });
 
   it('uses getObjectData (not headObject) for images', async () => {
