@@ -5,7 +5,6 @@ import fs from 'fs';
 import path from 'path';
 
 // Helper to load and parse .env files if they exist (without external dependencies)
-const loadedKeys = new Set();
 const loadEnv = (filePath) => {
   if (fs.existsSync(filePath)) {
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -22,10 +21,8 @@ const loadEnv = (filePath) => {
           val = val.slice(1, -1);
         }
         
-        if (!process.env[key] || loadedKeys.has(key)) {
-          process.env[key] = val;
-          loadedKeys.add(key);
-        }
+        // Always overwrite process.env to ignore stale environment variables from the shell
+        process.env[key] = val;
       }
     });
   }
@@ -49,6 +46,95 @@ if (!databaseUrl) {
 
 const sql = neon(databaseUrl);
 const passwordHash = await bcrypt.hash(password, 12);
+
+console.log('Bootstrapping database tables if they do not exist...');
+try {
+  await sql`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`;
+  
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      email         text NOT NULL UNIQUE,
+      password_hash text NOT NULL,
+      created_at    timestamptz DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS empresas (
+      id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      nombre        text NOT NULL,
+      logo_url      text,
+      contacto_email text,
+      created_at    timestamptz DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS perfiles (
+      id         uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      rol        text NOT NULL CHECK (rol IN ('admin', 'empresa')),
+      empresa_id uuid REFERENCES empresas(id) ON DELETE SET NULL,
+      nombre     text
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS mensajes_recolector (
+      id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      contenido_texto text,
+      fotos_urls      text[],
+      recibido_at     timestamptz DEFAULT now(),
+      estado          text DEFAULT 'pendiente'
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS extracciones (
+      id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      mensaje_id          uuid REFERENCES mensajes_recolector(id) ON DELETE CASCADE,
+      empresa_id          uuid REFERENCES empresas(id) ON DELETE CASCADE,
+      tipo_material       text NOT NULL,
+      cantidad_kg         numeric NOT NULL,
+      fecha_recoleccion   date NOT NULL,
+      confianza_ia        numeric,
+      datos_raw           jsonb,
+      estado              text DEFAULT 'pendiente',
+      corregido_por       uuid REFERENCES users(id),
+      created_at          timestamptz DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS recolecciones (
+      id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      extraccion_id     uuid REFERENCES extracciones(id) ON DELETE SET NULL,
+      empresa_id        uuid REFERENCES empresas(id) ON DELETE CASCADE NOT NULL,
+      tipo_material     text NOT NULL,
+      cantidad_kg       numeric NOT NULL,
+      fecha_recoleccion date NOT NULL,
+      validado_por      uuid REFERENCES users(id),
+      validado_at       timestamptz DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS contenido_educativo (
+      id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      titulo       text NOT NULL,
+      tipo         text,
+      url          text,
+      contenido_md text,
+      tags         text[],
+      publicado    boolean DEFAULT false,
+      created_at   timestamptz DEFAULT now()
+    )
+  `;
+  console.log('Database tables successfully created or verified.');
+} catch (error) {
+  console.error('Error bootstrapping database tables:', error);
+  process.exit(1);
+}
 
 const existing = await sql`SELECT id FROM users WHERE email = ${email} LIMIT 1`;
 
