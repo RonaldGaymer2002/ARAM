@@ -23,10 +23,31 @@ const config: Config = {
           800: '#166534',
           900: '#14532d',
         },
+        'green-primary': '#4BAF47',
+        'green-light': '#EDF7ED',
+        'bg-page': '#F8F7F0',
+        'black-heading': '#24231D',
+        'body-text': '#878680',
+        'border-default': '#E3E3E3',
+        'border-dark': '#333F4D',
+        'accent-blue': '#066AAB',
+        'error-red': '#FF0000',
+        'warning-amber': '#F57F17',
+        'warning-light': '#FFF8E1',
+      },
+      backgroundImage: {
+        'gradient-brand': 'linear-gradient(180deg, rgba(36,35,29,0.8) 0%, #4BAF47 100%)',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'Manrope', 'sans-serif'],
       },
+      boxShadow: {
+        'card': '30px 30px 80px 0px rgba(0,0,0,0.10)',
+      },
+      borderRadius: {
+        'card': '5px',
+        'input': '8px',
+      }
     },
   },
   plugins: [require('@tailwindcss/typography')],
