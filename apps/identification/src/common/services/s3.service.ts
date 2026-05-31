@@ -39,7 +39,12 @@ export class S3Service extends BaseService {
 
   constructor(private readonly bucket: string) {
     super('S3Service');
-    this.client = new S3Client({});
+    // Disable automatic checksum injection so presigned PUT URLs work from
+    // the browser — fetch() cannot compute CRC32 before sending the body.
+    this.client = new S3Client({
+      requestChecksumCalculation: 'when_required',
+      responseChecksumValidation: 'when_required',
+    });
   }
 
   /**
