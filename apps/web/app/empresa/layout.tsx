@@ -11,7 +11,7 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar rol="empresa" />
+      <Sidebar rol={session.user.rol as 'admin' | 'empresa'} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );

@@ -46,6 +46,10 @@ function analysisJson(overrides: Partial<ExtractionAnalysis> = {}): string {
   return JSON.stringify(defaults);
 }
 
+function descriptionText(): string {
+  return 'The image shows a delivery note from Empresa ABC dated 2024-03-10, listing 50kg of papel.';
+}
+
 function rejectedJson(reasons: string[] = ['no_collection_data']): string {
   return JSON.stringify({
     company: null, date: null, materials: [], notes: null,
@@ -242,29 +246,55 @@ describe('presign()', () => {
 
 // ─── extractMedia() — image ───────────────────────────────────────────────────
 
+// Image extraction now uses two Bedrock calls: describe (step 1) + extract (step 2).
+// Each test must provide two mock outputs: [descriptionText, analysisJson].
 describe('extractMedia() — image happy path', () => {
   it('returns extracted data and high confidence', async () => {
-    const bedrock = makeBedrock(bedrockOutput(analysisJson(), MODEL_HAIKU, USAGE_LARGE));
-    const result  = await makeService(bedrock, makeS3()).extractMedia('session-abc', 'image');
+    const bedrock = makeBedrock(
+      bedrockOutput(descriptionText(), MODEL_HAIKU, USAGE_SMALL),
+      bedrockOutput(analysisJson(),    MODEL_HAIKU, USAGE_LARGE),
+    );
+    const result = await makeService(bedrock, makeS3()).extractMedia('session-abc', 'image');
 
     expect(result.inputType).toBe('image');
     expect(result.confidence).toBe('high');
     expect(result.extracted).not.toBeNull();
   });
 
-  it('includes usage with token counts and costUsd', async () => {
-    const bedrock = makeBedrock(bedrockOutput(analysisJson(), MODEL_NOVA, USAGE_LARGE));
-    const result  = await makeService(bedrock, makeS3()).extractMedia('session-abc', 'image');
+  it('includes usage summed across both Bedrock calls', async () => {
+    const bedrock = makeBedrock(
+      bedrockOutput(descriptionText(), MODEL_NOVA, USAGE_SMALL),
+      bedrockOutput(analysisJson(),    MODEL_NOVA, USAGE_LARGE),
+    );
+    const result = await makeService(bedrock, makeS3()).extractMedia('session-abc', 'image');
 
-    expect(result.usage.inputTokens).toBe(USAGE_LARGE.inputTokens);
-    expect(result.usage.outputTokens).toBe(USAGE_LARGE.outputTokens);
+    expect(result.usage.inputTokens).toBe(USAGE_SMALL.inputTokens + USAGE_LARGE.inputTokens);
+    expect(result.usage.outputTokens).toBe(USAGE_SMALL.outputTokens + USAGE_LARGE.outputTokens);
     expect(result.usage.costUsd).toBeGreaterThan(0);
     expect(result.usage.modelId).toBe(MODEL_NOVA);
   });
 
+  it('includes description from step 1', async () => {
+    const bedrock = makeBedrock(
+      bedrockOutput(descriptionText(), MODEL_HAIKU, USAGE_SMALL),
+      bedrockOutput(analysisJson(),    MODEL_HAIKU, USAGE_LARGE),
+    );
+    const result = await makeService(bedrock, makeS3()).extractMedia('session-abc', 'image');
+    expect(result.description).toBe(descriptionText());
+  });
+
+  it('calls Bedrock exactly twice for images (describe + extract)', async () => {
+    const bedrock = makeBedrock(
+      bedrockOutput(descriptionText()),
+      bedrockOutput(analysisJson()),
+    );
+    await makeService(bedrock, makeS3()).extractMedia('session-abc', 'image');
+    expect(bedrock.invoke).toHaveBeenCalledTimes(2);
+  });
+
   it('uses getObjectData (not headObject) for images', async () => {
     const s3      = makeS3();
-    const bedrock = makeBedrock(bedrockOutput(analysisJson()));
+    const bedrock = makeBedrock(bedrockOutput(descriptionText()), bedrockOutput(analysisJson()));
     await makeService(bedrock, s3).extractMedia('session-abc', 'image');
 
     expect(s3.getObjectData).toHaveBeenCalledTimes(1);
@@ -274,25 +304,35 @@ describe('extractMedia() — image happy path', () => {
 
   it('always deletes the S3 object', async () => {
     const s3 = makeS3();
-    await makeService(makeBedrock(bedrockOutput(analysisJson())), s3).extractMedia('s1', 'image');
+    await makeService(
+      makeBedrock(bedrockOutput(descriptionText()), bedrockOutput(analysisJson())),
+      s3,
+    ).extractMedia('s1', 'image');
     expect(s3.deleteObject).toHaveBeenCalledTimes(1);
   });
 
   it('swallows S3 deleteObject errors', async () => {
     const s3 = makeS3(false);
     await expect(
-      makeService(makeBedrock(bedrockOutput(analysisJson())), s3).extractMedia('s1', 'image'),
+      makeService(
+        makeBedrock(bedrockOutput(descriptionText()), bedrockOutput(analysisJson())),
+        s3,
+      ).extractMedia('s1', 'image'),
     ).resolves.toBeDefined();
   });
 });
 
 describe('extractMedia() — image rejection', () => {
-  it('returns null extracted and rejectedReasons when rejected', async () => {
-    const bedrock = makeBedrock(bedrockOutput(rejectedJson(['not_a_collection_document'])));
-    const result  = await makeService(bedrock, makeS3()).extractMedia('s2', 'image');
+  it('returns null extracted, rejectedReasons, and still includes description', async () => {
+    const bedrock = makeBedrock(
+      bedrockOutput(descriptionText()),
+      bedrockOutput(rejectedJson(['not_a_collection_document'])),
+    );
+    const result = await makeService(bedrock, makeS3()).extractMedia('s2', 'image');
 
     expect(result.extracted).toBeNull();
     expect(result.rejectedReasons).toContain('not_a_collection_document');
+    expect(result.description).toBe(descriptionText());
   });
 });
 

@@ -68,6 +68,8 @@ export interface ExtractionResult {
   extracted: ExtractionData | null;
   rejectedReasons?: string[];
   usage: ExtractionUsage;
+  /** What the model saw in the image/video before extracting — only present for media inputs. */
+  description?: string;
 }
 
 // ── Internal Bedrock response shape ──────────────────────────────────────────

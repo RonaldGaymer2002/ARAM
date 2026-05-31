@@ -72,7 +72,7 @@ export class IdentificationController {
   // ── POST /media ───────────────────────────────────────────────────────────
   async extractMedia(c: Context): Promise<Response> {
     try {
-      const body = await c.req.json<{ sessionId?: string; type?: string }>();
+      const body = await c.req.json<{ sessionId?: string; type?: string; notes?: string }>();
 
       if (!body.sessionId || typeof body.sessionId !== 'string' || !body.sessionId.trim()) {
         throw new BadRequestException('"sessionId" is required.', 'MISSING_SESSION_ID');
@@ -85,9 +85,14 @@ export class IdentificationController {
         );
       }
 
+      const notes = typeof body.notes === 'string' && body.notes.trim()
+        ? body.notes.trim()
+        : undefined;
+
       const result = await this.service.extractMedia(
         body.sessionId.trim(),
         body.type as 'image' | 'video',
+        notes,
       );
 
       const status = result.extracted ? 200 : 422;

@@ -114,6 +114,16 @@ export class FundaresStack extends cdk.Stack {
           enabled: true,
         },
       ],
+      // Allow browsers to PUT directly via presigned URLs.
+      // Only PUT is needed — GET/DELETE go through the Lambda, never the browser.
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.PUT],
+          allowedOrigins: ["*"],
+          allowedHeaders: ["content-type"],
+          maxAge: 3000,
+        },
+      ],
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,

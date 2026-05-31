@@ -10,8 +10,8 @@ export default withAuth(
       return NextResponse.redirect(new URL('/empresa/dashboard', req.url));
     }
 
-    if (path.startsWith('/empresa') && token?.rol !== 'empresa' && token?.rol !== 'admin') {
-      return NextResponse.redirect(new URL('/', req.url));
+    if (path.startsWith('/empresa') && token?.rol !== 'empresa') {
+      return NextResponse.redirect(new URL('/admin/dashboard', req.url));
     }
 
     if (path === '/') {

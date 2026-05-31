@@ -28,6 +28,12 @@ export interface ExtractMediaRequestDto {
   sessionId: string;
   /** Whether the uploaded file is an image or a video. */
   type: 'image' | 'video';
+  /**
+   * Optional context from the user to improve extraction accuracy.
+   * Use when the image/video does not clearly show company, date, or materials.
+   * e.g. "Empresa Verdesur, retiro del 15/06/2026. El remito está incompleto."
+   */
+  notes?: string;
 }
 
 // ── Response DTOs ─────────────────────────────────────────────────────────────
@@ -67,6 +73,8 @@ export interface ExtractionResultDto {
   extracted: ExtractionDataDto | null;
   rejectedReasons?: string[];
   usage: ExtractionUsageDto;
+  /** Natural-language description of the image/video content (media inputs only). */
+  description?: string;
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
