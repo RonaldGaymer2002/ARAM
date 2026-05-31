@@ -67,6 +67,8 @@ export interface ExtractionResultDto {
   extracted: ExtractionDataDto | null;
   rejectedReasons?: string[];
   usage: ExtractionUsageDto;
+  /** Natural-language description of the image/video content (media inputs only). */
+  description?: string;
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
