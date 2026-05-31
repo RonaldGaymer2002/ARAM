@@ -61,7 +61,7 @@ export default function LandingPage() {
     // Mini bars animation
     const bars = gsap.utils.toArray('.mini-bar-fill') as HTMLElement[];
     bars.forEach(bar => {
-      const targetWidth = bar.getAttribute('data-width');
+      const targetWidth = bar.getAttribute('data-width') || '100%';
       gsap.fromTo(bar, 
         { width: '0%' },
         {
