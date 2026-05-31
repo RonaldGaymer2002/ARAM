@@ -53,7 +53,32 @@ const passwordHash = await bcrypt.hash(password, 12);
 const existing = await sql`SELECT id FROM users WHERE email = ${email} LIMIT 1`;
 
 if (existing.length > 0) {
-  console.log(`Admin user already exists: ${email}`);
+  const userId = existing[0].id;
+  console.log(`Admin user already exists: ${email}. Updating password and profile...`);
+  
+  await sql`
+    UPDATE users
+    SET password_hash = ${passwordHash}
+    WHERE id = ${userId}
+  `;
+  
+  const profile = await sql`SELECT rol FROM perfiles WHERE id = ${userId} LIMIT 1`;
+  if (profile.length === 0) {
+    await sql`
+      INSERT INTO perfiles (id, rol, nombre)
+      VALUES (${userId}, 'admin', ${nombre})
+    `;
+  } else {
+    await sql`
+      UPDATE perfiles
+      SET rol = 'admin', nombre = ${nombre}
+      WHERE id = ${userId}
+    `;
+  }
+  
+  console.log('Admin user updated successfully');
+  console.log(`Email: ${email}`);
+  console.log(`Password: ${password}`);
   process.exit(0);
 }
 
