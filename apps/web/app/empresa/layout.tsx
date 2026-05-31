@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
+import { DoodleBackground } from '@/components/DoodleBackground';
 import { getSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,10 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
   return (
     <div className="flex min-h-screen">
       <Sidebar rol={session.user.rol as 'admin' | 'empresa'} />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="relative flex-1 overflow-auto">
+        <DoodleBackground />
+        <div className="relative z-10">{children}</div>
+      </main>
     </div>
   );
 }
