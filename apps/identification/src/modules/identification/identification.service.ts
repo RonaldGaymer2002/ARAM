@@ -174,14 +174,18 @@ export class IdentificationService extends BaseService {
 
   // ─── Media extraction ─────────────────────────────────────────────────────
 
-  async extractMedia(sessionId: string, type: 'image' | 'video'): Promise<ExtractionResult> {
+  async extractMedia(
+    sessionId: string,
+    type: 'image' | 'video',
+    notes?: string,
+  ): Promise<ExtractionResult> {
     const key = this.sessionKey(sessionId);
-    this.logger.info('Media extraction started', { sessionId, type });
+    this.logger.info('Media extraction started', { sessionId, type, hasNotes: !!notes });
 
     try {
       const output      = type === 'video'
-        ? await this.invokeForVideo(key)
-        : await this.invokeForImage(key);
+        ? await this.invokeForVideo(key, notes)
+        : await this.invokeForImage(key, notes);
 
       const analysis    = JSON.parse(output.text) as ExtractionAnalysis;
       const cost        = computeCost(output.usage, output.modelId);
@@ -219,7 +223,7 @@ export class IdentificationService extends BaseService {
    * prompt would miss context (e.g. handwritten notes, partial text, logos).
    * Usage is accumulated across both calls so the caller sees the real total.
    */
-  private async invokeForImage(key: string): Promise<{
+  private async invokeForImage(key: string, notes?: string): Promise<{
     text: string;
     usage: { inputTokens: number; outputTokens: number };
     modelId: string;
@@ -241,10 +245,11 @@ export class IdentificationService extends BaseService {
     const description = descOutput.text;
     this.logger.debug('Image described', { chars: description.length });
 
-    // ── Step 2: extract using description as grounding ──────────────────────
+    // ── Step 2: extract using description + optional user notes ────────────
     const extractUserPrompt =
       MEDIA_USER_PROMPT +
-      '\n\nWhat the image shows:\n' + description;
+      '\n\nWhat the image shows:\n' + description +
+      (notes ? '\n\nAdditional context provided by the user:\n' + notes : '');
 
     const extractOutput = await this.bedrock.invoke(
       {
@@ -267,15 +272,18 @@ export class IdentificationService extends BaseService {
     };
   }
 
-  private async invokeForVideo(key: string) {
+  private async invokeForVideo(key: string, notes?: string) {
     const { mimeType } = await this.storage.headObject(key);
     const s3Uri  = this.storage.getObjectUri(key);
     const format = VIDEO_FORMAT_MAP[mimeType] ?? 'mp4';
 
+    const userPrompt = MEDIA_USER_PROMPT +
+      (notes ? '\n\nAdditional context provided by the user:\n' + notes : '');
+
     return this.bedrock.invoke(
       {
         systemPrompt: VIDEO_SYSTEM_PROMPT,
-        userPrompt:   MEDIA_USER_PROMPT,
+        userPrompt,
         video:        { s3Uri, format },
         maxTokens:    300,
       },

@@ -130,14 +130,18 @@ Call this **after** the S3 upload returns `200`.
 ```json
 {
   "sessionId": "f9f3b2dc-9bb4-4aa5-83b0-e277f25c6b9f",
-  "type": "image"
+  "type": "image",
+  "notes": "Empresa Verdesur, retiro del 15/06/2026. El remito está incompleto."
 }
 ```
 
-| Field       | Type                   | Required | Description                              |
-|-------------|------------------------|----------|------------------------------------------|
-| `sessionId` | `string`               | yes      | Value from `/extract/presign` response   |
-| `type`      | `"image"` \| `"video"` | yes      | Must match what was uploaded             |
+| Field       | Type                   | Required | Description                                                                 |
+|-------------|------------------------|----------|-----------------------------------------------------------------------------|
+| `sessionId` | `string`               | yes      | Value from `/extract/presign` response                                      |
+| `type`      | `"image"` \| `"video"` | yes      | Must match what was uploaded                                                |
+| `notes`     | `string`               | no       | Extra context from the user — injected into the extraction prompt. Use when the image/video doesn't clearly show company, date, or quantities. |
+
+> `notes` is injected **after** the model's visual description (step 1) and before the structured extraction (step 2). It does not appear in the response.
 
 ### Response `200` — data extracted (image with document)
 
@@ -296,7 +300,7 @@ async function extractFromText(message: string) {
 }
 
 // ── Image / Video ─────────────────────────────────────────────────────────────
-async function extractFromFile(file: File) {
+async function extractFromFile(file: File, notes?: string) {
   const type = file.type.startsWith('video/') ? 'video' : 'image';
 
   // 1. Presign
@@ -316,11 +320,15 @@ async function extractFromFile(file: File) {
   });
   if (!uploadRes.ok) throw new Error(`S3 upload failed: ${uploadRes.status}`);
 
-  // 3. Extract
+  // 3. Extract — pass notes only if provided
   const extractRes = await fetch(`${API}/extract/media`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId: presign.sessionId, type }),
+    body: JSON.stringify({
+      sessionId: presign.sessionId,
+      type,
+      ...(notes?.trim() ? { notes: notes.trim() } : {}),
+    }),
   });
   if (!extractRes.ok && extractRes.status !== 422) throw new Error(await extractRes.text());
   const { data } = await extractRes.json();
