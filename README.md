@@ -302,5 +302,5 @@ Este proyecto fue desarrollado por:
 
 - **Ronald Augusto R.** ([@RonaldGaymer2002](https://github.com/RonaldGaymer2002))
 - **Mijael Mérida Alvarado** ([@jackson1939](https://github.com/jackson1939))
-- **Walter**
+- **Walter Ibáñez** ([@walteribanez555](https://github.com/walteribanez555))
 
