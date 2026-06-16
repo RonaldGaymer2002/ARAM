@@ -198,8 +198,8 @@ Tipos TypeScript de dominio usados por múltiples apps.
 
 ```bash
 # Clonar e instalar todas las dependencias del monorepo
-git clone https://github.com/jackson1939/innovaHack-fundares
-cd innovaHack-fundares
+git clone https://github.com/RonaldGaymer2002/ARAM.git
+cd ARAM
 npm install
 ```
 
@@ -293,3 +293,14 @@ Deployado en **Vercel** — conectar el repo y configurar las variables de entor
 ## Convenciones de commits
 
 El proyecto usa `ARR x.y.z` como formato de versión en los commits, reflejando el número de build acumulado.
+
+---
+
+## Colaboradores / Contribuyentes
+
+Este proyecto fue desarrollado por:
+
+- **Ronald Augusto R.** ([@RonaldGaymer2002](https://github.com/RonaldGaymer2002))
+- **Mijael Mérida Alvarado** ([@jackson1939](https://github.com/jackson1939))
+- **Walter**
+
